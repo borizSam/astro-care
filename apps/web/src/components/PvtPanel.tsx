@@ -3,6 +3,9 @@ import { motion } from 'motion/react';
 import type { Finding, PvtResult, Symptom, Task, TaskId } from '@astro-care/engine';
 import { api, type CheckResponse } from '../api';
 
+/** No response within this time = lapse (and the test moves on). */
+const NO_RESPONSE_MS = 5000;
+
 type Phase = 'idle' | 'waiting' | 'stimulus' | 'feedback' | 'evaluating' | 'verdict';
 
 interface Props {
@@ -40,6 +43,7 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
   const startAt = useRef(0);
   const timer = useRef(0);
   const raf = useRef(0);
+  const noResponse = useRef(0);
 
   const evaluate = useCallback(
     async (pvt: PvtResult) => {
@@ -54,6 +58,7 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
 
   const finish = useCallback(() => {
     window.clearTimeout(timer.current);
+    window.clearTimeout(noResponse.current);
     cancelAnimationFrame(raf.current);
     onProgress?.(1);
     void evaluate({ reactionTimesMs: rts.current, falseStarts: falseStarts.current });
@@ -72,6 +77,14 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
         raf.current = requestAnimationFrame(tick);
       };
       raf.current = requestAnimationFrame(tick);
+      // No response: count it as a lapse and keep going (the test must never hang).
+      noResponse.current = window.setTimeout(() => {
+        cancelAnimationFrame(raf.current);
+        rts.current.push(NO_RESPONSE_MS);
+        setMs(-2);
+        setPhase('feedback');
+        window.setTimeout(schedule, 700);
+      }, NO_RESPONSE_MS);
     }, 2000 + Math.random() * 8000);
   }, [durationS, finish]);
 
@@ -93,6 +106,7 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
       setPhase('feedback');
       window.setTimeout(schedule, 700);
     } else if (phase === 'stimulus') {
+      window.clearTimeout(noResponse.current);
       cancelAnimationFrame(raf.current);
       const rt = Math.round(performance.now() - stimAt.current);
       if (rt < 100) falseStarts.current += 1;
@@ -126,7 +140,18 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
     return () => window.clearInterval(id);
   }, [running, durationS, onProgress]);
 
-  useEffect(() => () => { window.clearTimeout(timer.current); cancelAnimationFrame(raf.current); }, []);
+  useEffect(() => () => { window.clearTimeout(timer.current); window.clearTimeout(noResponse.current); cancelAnimationFrame(raf.current); }, []);
+
+  // Verdict on screen + conditions change (solar storm toggled, symptom tapped, task switched): recompute with the same PVT, no need to repeat the test.
+  const firstRun = useRef(true);
+  useEffect(() => {
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
+    if (phase === 'verdict' && rts.current.length) void evaluate({ reactionTimesMs: rts.current, falseStarts: falseStarts.current });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [missionTime, symptoms, task]);
 
   async function fix(f: Finding) {
     setBusy(true);
@@ -186,7 +211,7 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
               {phase === 'verdict' && <>REPETIR<br />TEST</>}
               {phase === 'waiting' && <span className="text-xl text-stone-500">ESPERA…</span>}
               {phase === 'stimulus' && <>¡YA!</>}
-              {phase === 'feedback' && <span className="text-xl text-stone-600">{ms < 0 ? 'DEMASIADO PRONTO' : `${ms} ms`}</span>}
+              {phase === 'feedback' && <span className="text-xl text-stone-600">{ms === -2 ? 'SIN RESPUESTA' : ms < 0 ? 'DEMASIADO PRONTO' : `${ms} ms`}</span>}
               {phase === 'evaluating' && <span className="text-lg text-stone-500">…</span>}
             </span>
           </span>

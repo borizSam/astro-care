@@ -14,7 +14,7 @@ import {
   type Symptom,
   type TaskId,
 } from '@astro-care/engine';
-import { OSDR_SOURCES, TIMEPOINTS, crewList, labPanelFor, labsFor, solarEventAt, spaceWeatherSummary } from './data';
+import { OSDR_SOURCES, TIMEPOINTS, crewList, labsFor, solarEventAt, spaceWeatherSummary } from './data';
 import { addCare, addCheck, checksFor, intakeSummary, resetCrew, type CareType } from './store';
 import { SCENARIOS, allSnapshots, initTelemetry, setConsciousness, setScenario, snapshot, tick, vitalsNow, type Scenario } from './telemetry';
 
@@ -95,6 +95,10 @@ app.post<{ Params: { id: string }; Body: { type: CareType; value: number; at?: s
     return reply.code(400).send({ error: 'type and numeric value required' });
   }
   addCare({ crewId: req.params.id, type, value, at: at ?? new Date().toISOString() });
+  // Simulated physiology: once a dehydrated astronaut has drunk enough, the wearable drifts back to normal.
+  if (type === 'water' && snapshot(req.params.id).scenario === 'dehydrated' && intakeSummary(req.params.id).waterMlLast3h >= 500) {
+    setScenario(req.params.id, 'nominal');
+  }
   return crewState(req.params.id);
 });
 
@@ -150,7 +154,7 @@ app.post<{ Params: { id: string }; Body: CheckBody }>('/api/crew/:id/check', asy
     symptoms: b.symptoms ?? [],
     sleepHours: b.sleepHours ?? intake.sleepHours ?? 7,
     solarEvent: b.missionTime ? solarEventAt(b.missionTime) : null,
-    labs: c.guest ? undefined : labPanelFor(c.id, DEFAULT_LAB_TIMEPOINT),
+    // OSDR blood tests are pre/post-flight, not today's: shown as reference, never used for today's verdict
   };
   const record = { ...evaluateCheck(input), id: randomUUID(), crewId: c.id, pvt: pvtStats(b.pvt, c.pvtBaselineMedianMs) };
   addCheck(record);

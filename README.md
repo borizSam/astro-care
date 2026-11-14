@@ -27,14 +27,18 @@ npm test           # engine tests
 npm run fetch:data # re-download NASA data (optional; cached copies are committed)
 ```
 
-Open http://localhost:5173. UI in Spanish. Use the **Demo** buttons (descansado / deshidratado / fatigado / hipoxia) and the **space weather** toggle to reproduce the pitch scenarios.
+Open http://localhost:5173 (or the port Vite prints).
+
+**Presenter controls (hidden from the audience):** `D` shows/hides the demo panel · `1`–`4` load a profile (descansado, deshidratado, fatigado, hipoxia) · `S` toggles the real 11-May-2024 solar storm (NASA DONKI). With a verdict on screen, toggling the storm, a symptom or the task recomputes it instantly with the same reaction test.
+
+**Pitch flow (tested end to end):** `2` (dehydrated) → reaction test → NO-GO (water, toilet) → HECHO ×2 → GO (hologram turns green) → `S` → NO-GO (solar particle event; the Moon has no magnetic field).
 
 ## NASA data used
 
 | Source | What | How it's used |
 |---|---|---|
-| [NASA OSDR OSD-569](https://osdr.nasa.gov/bio/repo/data/studies/OSD-569) | Inspiration4 crew (C001–C004) Complete Blood Count, LSDS-7, 7 timepoints (L-92 … R+194) | Crew IDs/sex; blood test card; hemoglobin rule (advice) |
-| [NASA OSDR OSD-575](https://osdr.nasa.gov/bio/repo/data/studies/OSD-575) | Inspiration4 Comprehensive Metabolic Panel, LSDS-8 | BUN/creatinine dehydration marker (advice) |
+| [NASA OSDR OSD-569](https://osdr.nasa.gov/bio/repo/data/studies/OSD-569) | Inspiration4 crew (C001–C004) Complete Blood Count, LSDS-7, 7 timepoints (L-92 … R+194) | Crew IDs; reference blood tests via `/api/crew/:id/labs` (pre/post-flight, so **not** used for today's verdict) |
+| [NASA OSDR OSD-575](https://osdr.nasa.gov/bio/repo/data/studies/OSD-575) | Inspiration4 Comprehensive Metabolic Panel, LSDS-8 | Reference blood tests (same endpoint) |
 | NASA DONKI (CCMC) via api.nasa.gov | Solar energetic particle events and geomagnetic storms, May 2024 (Kp 9, GOES >100 MeV SEP) | Real solar event → NO-GO for EVA / rover |
 | NASA Human Research Program | 5 hazards, 17 risks | Every rule cites its HRP risk |
 

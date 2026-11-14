@@ -13,7 +13,8 @@ const STORM_TIME = '2024-05-11T06:00:00Z';
 const PVT_SECONDS = 30; // demo length; validated PVT-B is 3 min
 const IS_LIVE = new URLSearchParams(location.search).has('live');
 const GUEST = 'GUEST';
-const MISSION_START = Date.now() - (4 * 3600 + 32 * 60) * 1000;
+/** Tasks shown in the console: enough to show the verdict depends on the task. */
+const SHOWN_TASKS = ['eva', 'lab'];
 
 const PRESETS: Record<string, { scenario: Scenario; care: [Parameters<typeof api.care>[1], number, number][] }> = {
   descansado: { scenario: 'nominal', care: [['sleep', 7.5, 180], ['food', 700, 80], ['water', 500, 60], ['water', 250, 20], ['urine', 2, 15]] },
@@ -30,8 +31,6 @@ export default function App() {
   const [selected, setSelected] = useState(IS_LIVE ? GUEST : 'C001');
   const [storm, setStorm] = useState(false);
   const [symptoms, setSymptoms] = useState<Symptom[]>([]);
-  const [visited, setVisited] = useState(false);
-  const [pvtProgress, setPvtProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const { frames, connected } = useTelemetry();
 
@@ -54,11 +53,26 @@ export default function App() {
   function selectCrew(id: string) {
     setSelected(id);
     setSymptoms([]);
-    setPvtProgress(0);
-    setVisited(false);
   }
 
   const [showCrew, setShowCrew] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
+
+  // Presenter shortcuts (ignored while typing or during the reaction test, where Space is used).
+  const presetRef = useRef(applyPreset);
+  presetRef.current = applyPreset;
+  useEffect(() => {
+    if (IS_LIVE) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.ctrlKey || e.metaKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === 'd') setShowDemo((v) => !v);
+      else if (k === 's') setStorm((v) => !v);
+      else if (['1', '2', '3', '4'].includes(k)) void presetRef.current(Object.keys(PRESETS)[Number(k) - 1]);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   const crewMembers = crew.filter((c) => c.id !== GUEST);
   const crewAlerts = crewMembers.filter((c) => (frames[c.id]?.avatar ?? c.avatar) !== 'optimal').length;
   const frame = frames[selected];
@@ -105,7 +119,6 @@ export default function App() {
     }
   }, [guestCheck, frames]);
 
-  const progress = 20 + (visited || symptoms.length ? 20 : 0) + pvtProgress * 60;
   const vitals = frame?.vitals ?? current?.vitals;
   const news2 = frame?.news2 ?? current?.news2;
 
@@ -113,7 +126,7 @@ export default function App() {
     return (
       <div className="mx-auto flex min-h-screen max-w-xl flex-col gap-3 p-3">
         <Header subtitle="Test de fatiga en directo" />
-        {meta && <PvtPanel crewId={GUEST} tasks={meta.tasks} symptoms={[]} durationS={PVT_SECONDS} />}
+        {meta && <PvtPanel crewId={GUEST} tasks={meta.tasks.filter((t) => SHOWN_TASKS.includes(t.id))} symptoms={[]} durationS={PVT_SECONDS} />}
         <p className="label text-center">Tu resultado aparece en la pantalla grande</p>
       </div>
     );
@@ -134,12 +147,10 @@ export default function App() {
             zones={meta.bodyZones}
             symptoms={symptoms}
             onToggle={toggle}
-            onZoneVisited={() => setVisited(true)}
             vitals={vitals}
             news2={news2}
             avatar={frame?.avatar ?? current.avatar}
             live={connected}
-            progress={progress}
             waterMl={current.intake.waterMlLast3h}
             onCare={care}
           />
@@ -147,11 +158,10 @@ export default function App() {
             <PvtPanel
               key={selected}
               crewId={selected}
-              tasks={meta.tasks}
+              tasks={meta.tasks.filter((t) => SHOWN_TASKS.includes(t.id))}
               symptoms={symptoms}
               missionTime={storm ? STORM_TIME : undefined}
               durationS={PVT_SECONDS}
-              onProgress={setPvtProgress}
               onVerdict={() => refresh()}
             />
             <QrCard url={qrUrl} />
@@ -187,7 +197,8 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <StatusBar connected={connected} storm={storm} onStorm={setStorm} onPreset={applyPreset} onCrew={() => setShowCrew(true)} crewAlerts={crewAlerts} />
+      <StatusBar connected={connected} storm={storm} onStorm={setStorm} onCrew={() => setShowCrew(true)} crewAlerts={crewAlerts} />
+      {showDemo && <DemoPanel onPreset={applyPreset} onClose={() => setShowDemo(false)} />}
     </div>
   );
 }
@@ -210,44 +221,45 @@ function Header({ subtitle, right }: { subtitle: string; right?: React.ReactNode
   );
 }
 
-function StatusBar({ connected, storm, onStorm, onPreset, onCrew, crewAlerts }: { connected: boolean; storm: boolean; onStorm: (v: boolean) => void; onPreset: (p: string) => void; onCrew: () => void; crewAlerts: number }) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-  const s = Math.floor((now - MISSION_START) / 1000);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const elapsed = `T+${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
-
+function StatusBar({ connected, storm, onStorm, onCrew, crewAlerts }: { connected: boolean; storm: boolean; onStorm: (v: boolean) => void; onCrew: () => void; crewAlerts: number }) {
   return (
-    <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-line pt-3 font-mono text-[11px] uppercase tracking-wider text-dim">
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
-        <button
-          onClick={onCrew}
-          className="flex items-center gap-2 rounded-md border border-hud bg-hud/10 px-3 py-1.5 font-bold text-hud hover:bg-hud/20"
-        >
-          Estado de tripulación
-          {crewAlerts > 0 && (
-            <span className="rounded-full px-1.5 text-[10px] text-void" style={{ background: CREW_STATE.medium.color }}>
-              {crewAlerts} {crewAlerts === 1 ? 'alerta' : 'alertas'}
-            </span>
-          )}
-        </button>
-        <span>Diagnóstico del sistema: <b className="text-white">estable</b></span>
-        <span>Enlace de telemetría: <b className={connected ? 'text-hud' : 'text-nogo'}>{connected ? 'activo' : 'perdido'}</b></span>
-        <label className="flex items-center gap-1.5">
-          <input type="checkbox" checked={storm} onChange={(e) => onStorm(e.target.checked)} />
-          Clima espacial: <b className={storm ? 'text-nogo' : 'text-hud'}>{storm ? 'evento SEP 11-may-2024 (DONKI)' : 'normal'}</b>
-        </label>
-        <span>Tiempo de misión: <b className="text-white">{elapsed}</b></span>
+    <footer className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line pt-3 font-mono text-[11px] uppercase tracking-wider text-dim">
+      <button
+        onClick={onCrew}
+        className="flex items-center gap-2 rounded-md border border-hud bg-hud/10 px-3 py-1.5 font-bold text-hud hover:bg-hud/20"
+      >
+        Estado de tripulación
+        {crewAlerts > 0 && (
+          <span className="rounded-full px-1.5 text-[10px] text-void" style={{ background: CREW_STATE.medium.color }}>
+            {crewAlerts} {crewAlerts === 1 ? 'alerta' : 'alertas'}
+          </span>
+        )}
+      </button>
+      <span>Enlace de telemetría: <b className={connected ? 'text-hud' : 'text-nogo'}>{connected ? 'activo' : 'perdido'}</b></span>
+      <label className="flex cursor-pointer items-center gap-1.5">
+        <input type="checkbox" checked={storm} onChange={(e) => onStorm(e.target.checked)} />
+        Clima espacial (NASA DONKI): <b className={storm ? 'text-nogo' : 'text-hud'}>{storm ? 'tormenta de partículas solares · 11-may-2024' : 'normal'}</b>
+      </label>
+    </footer>
+  );
+}
+
+/** Presenter-only demo panel, toggled with the D key (hidden from the audience by default). */
+function DemoPanel({ onPreset, onClose }: { onPreset: (p: string) => void; onClose: () => void }) {
+  return (
+    <div className="fixed bottom-14 right-4 z-50 rounded-lg border border-amber/60 bg-void/95 p-3 font-mono text-xs shadow-2xl">
+      <div className="mb-2 flex items-center justify-between gap-6 text-amber">
+        <span>DEMO (presentador)</span>
+        <button onClick={onClose} aria-label="Cerrar demo">✕</button>
       </div>
-      <div className="flex items-center gap-1">
-        <span>Demo</span>
-        {Object.keys(PRESETS).map((p) => (
-          <button key={p} onClick={() => onPreset(p)} className="rounded border border-line px-2 py-0.5 normal-case hover:border-hud hover:text-white">{p}</button>
+      <div className="flex flex-col gap-1">
+        {Object.keys(PRESETS).map((p, i) => (
+          <button key={p} onClick={() => onPreset(p)} className="rounded border border-line px-3 py-1 text-left hover:border-amber hover:text-white">
+            <kbd className="mr-2 text-amber">{i + 1}</kbd>{p}
+          </button>
         ))}
       </div>
-    </footer>
+      <div className="mt-2 text-[10px] text-dim">D mostrar/ocultar · 1–4 perfil · S tormenta</div>
+    </div>
   );
 }
