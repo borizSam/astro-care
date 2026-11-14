@@ -84,7 +84,7 @@ export function labPanelFor(subject: string, timepoint: string): LabPanel {
 }
 
 interface CrewFile {
-  crew: { id: string; role: string; baseline: VitalsBaseline; pvtBaselineMedianMs: number }[];
+  crew: { id: string; role: string; guest?: boolean; baseline: VitalsBaseline; pvtBaselineMedianMs: number }[];
 }
 const crewFile: CrewFile = JSON.parse(readFileSync(join(DATA, 'crew.json'), 'utf8'));
 

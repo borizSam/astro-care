@@ -1,11 +1,13 @@
 import cors from '@fastify/cors';
 import Fastify from 'fastify';
 import { randomUUID } from 'node:crypto';
+import { networkInterfaces } from 'node:os';
 import {
   BODY_ZONES,
   TASKS,
   careLevels,
   evaluateCheck,
+  pvtStats,
   type Acvpu,
   type CheckInput,
   type PvtResult,
@@ -51,6 +53,10 @@ app.get('/api/meta', async () => ({
   bodyZones: BODY_ZONES,
   timepoints: TIMEPOINTS,
   scenarios: SCENARIOS,
+  /** URLs a phone on the same network can open (QR code). PUBLIC_URL overrides, e.g. when running inside WSL. */
+  lanHosts: process.env.PUBLIC_URL
+    ? [process.env.PUBLIC_URL]
+    : Object.values(networkInterfaces()).flat().filter((i) => i && i.family === 'IPv4' && !i.internal).map((i) => i!.address),
   sources: { osdr: OSDR_SOURCES, donki: 'https://api.nasa.gov (DONKI, CCMC)' },
 }));
 
@@ -65,7 +71,13 @@ app.get('/api/telemetry/stream', (req, reply) => {
     Connection: 'keep-alive',
     'Access-Control-Allow-Origin': '*',
   });
-  const send = () => reply.raw.write(`data: ${JSON.stringify(allSnapshots())}\n\n`);
+  const send = () => {
+    const frames = allSnapshots().map((f) => {
+      const last = checksFor(f.id)[0];
+      return { ...f, lastCheck: last ? { id: last.id, verdict: last.verdict, task: last.task, timestamp: last.timestamp, pvt: last.pvt } : null };
+    });
+    reply.raw.write(`data: ${JSON.stringify(frames)}\n\n`);
+  };
   send();
   const id = setInterval(send, 1000 / TELEMETRY_HZ);
   req.raw.on('close', () => clearInterval(id));
@@ -124,7 +136,10 @@ app.post<{ Params: { id: string }; Body: CheckBody }>('/api/crew/:id/check', asy
   if (!b || !TASKS[b.task] || !b.pvt) return reply.code(400).send({ error: 'task and pvt required' });
   if (b.consciousness) setConsciousness(c.id, b.consciousness);
   const vitals = vitalsNow(c.id)!;
-  const intake = intakeSummary(c.id);
+  // Guest (judge on the QR code) has no care log: use a neutral, well-hydrated intake so only PVT + vitals decide.
+  const intake = c.guest
+    ? { waterMlLast3h: 500, minutesSinceMeal: 90, minutesSinceVoid: 30, urineColor: 2, sleepHours: 7 }
+    : intakeSummary(c.id);
   const input: CheckInput = {
     task: b.task,
     vitals,
@@ -135,9 +150,9 @@ app.post<{ Params: { id: string }; Body: CheckBody }>('/api/crew/:id/check', asy
     symptoms: b.symptoms ?? [],
     sleepHours: b.sleepHours ?? intake.sleepHours ?? 7,
     solarEvent: b.missionTime ? solarEventAt(b.missionTime) : null,
-    labs: labPanelFor(c.id, DEFAULT_LAB_TIMEPOINT),
+    labs: c.guest ? undefined : labPanelFor(c.id, DEFAULT_LAB_TIMEPOINT),
   };
-  const record = { ...evaluateCheck(input), id: randomUUID(), crewId: c.id };
+  const record = { ...evaluateCheck(input), id: randomUUID(), crewId: c.id, pvt: pvtStats(b.pvt, c.pvtBaselineMedianMs) };
   addCheck(record);
   return { ...record, input };
 });

@@ -1,9 +1,56 @@
 {
-  "_note": "Crew IDs and sex come from NASA OSDR Inspiration4 (C001–C004). Vitals baselines and PVT baselines are SIMULATED (OSDR has no wearable vitals). Roles are fictional.",
+  "_note": "Crew IDs and sex come from NASA OSDR Inspiration4 (C001\u2013C004). Vitals baselines and PVT baselines are SIMULATED (OSDR has no wearable vitals). Roles are fictional. GUEST is the live-test profile used from the QR code (population-typical baseline, no care log).",
   "crew": [
-    { "id": "C001", "role": "Commander", "baseline": { "heartRate": 58, "systolicBP": 122, "spo2": 98 }, "pvtBaselineMedianMs": 245 },
-    { "id": "C002", "role": "Pilot", "baseline": { "heartRate": 64, "systolicBP": 112, "spo2": 98 }, "pvtBaselineMedianMs": 255 },
-    { "id": "C003", "role": "Mission Specialist", "baseline": { "heartRate": 66, "systolicBP": 108, "spo2": 97 }, "pvtBaselineMedianMs": 262 },
-    { "id": "C004", "role": "Mission Specialist", "baseline": { "heartRate": 60, "systolicBP": 126, "spo2": 98 }, "pvtBaselineMedianMs": 250 }
+    {
+      "id": "C001",
+      "role": "Commander",
+      "baseline": {
+        "heartRate": 58,
+        "systolicBP": 122,
+        "spo2": 98
+      },
+      "pvtBaselineMedianMs": 245
+    },
+    {
+      "id": "C002",
+      "role": "Pilot",
+      "baseline": {
+        "heartRate": 64,
+        "systolicBP": 112,
+        "spo2": 98
+      },
+      "pvtBaselineMedianMs": 255
+    },
+    {
+      "id": "C003",
+      "role": "Mission Specialist",
+      "baseline": {
+        "heartRate": 66,
+        "systolicBP": 108,
+        "spo2": 97
+      },
+      "pvtBaselineMedianMs": 262
+    },
+    {
+      "id": "C004",
+      "role": "Mission Specialist",
+      "baseline": {
+        "heartRate": 60,
+        "systolicBP": 126,
+        "spo2": 98
+      },
+      "pvtBaselineMedianMs": 250
+    },
+    {
+      "id": "GUEST",
+      "role": "Live test (judge)",
+      "guest": true,
+      "baseline": {
+        "heartRate": 70,
+        "systolicBP": 120,
+        "spo2": 98
+      },
+      "pvtBaselineMedianMs": 270
+    }
   ]
 }

@@ -18,6 +18,7 @@ export interface CareEntry {
 export interface CheckRecord extends VerdictResult {
   id: string;
   crewId: string;
+  pvt?: { medianMs: number; lapses: number; slowdownPct: number };
 }
 
 interface Store {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -9,28 +9,29 @@ import { Avatar } from './Avatar';
 const MODEL_URL = '/models/circulatory.glb';
 
 const AURA: Record<AvatarState, number> = {
-  optimal: 0x22c55e,
+  optimal: 0x4ade80,
   low: 0xeab308,
   medium: 0xf97316,
-  high: 0xef4444,
+  high: 0xf43f5e,
 };
 
-const LABEL: Record<AvatarState, string> = {
-  optimal: 'Feeling good',
-  low: 'A bit tired',
-  medium: 'Not well: check guidance',
-  high: 'Distress: crew alert',
-};
+const ARTERY_OXY = new THREE.Color(0.808, 0.035, 0.024);
+const ARTERY_HYPOXIC = new THREE.Color(0.32, 0.05, 0.38);
 
-const ARTERY_OXY = new THREE.Color(0.808, 0.035, 0.024); // oxygenated red (model default)
-const ARTERY_HYPOXIC = new THREE.Color(0.32, 0.05, 0.38); // cyanotic purple
+export interface Anchor {
+  id: string;
+  /** model-space position in metres (feet at y = 0) */
+  pos: [number, number, number];
+}
 
 interface Props {
   state: AvatarState;
   heartRate: number;
   respRate: number;
   spo2: number;
-  height?: number;
+  /** DOM elements positioned every frame at the projected anchor (hotspots, callouts) */
+  anchors?: Anchor[];
+  anchorEls?: MutableRefObject<Record<string, HTMLElement | null>>;
 }
 
 function webglAvailable() {
@@ -43,17 +44,14 @@ function webglAvailable() {
 }
 
 /**
- * 3D circulatory-system avatar. Live vitals drive it:
- *  - heart beats at the astronaut's heart rate
- *  - blood-flow waves speed up with heart rate
- *  - arteries shift from red to purple as SpO₂ drops
- *  - body breathes at the respiratory rate
- *  - skin glows with the NEWS2 state colour (pulses in distress)
+ * Hologram circulatory-system avatar driven by live vitals:
+ * heart beats at HR, blood flow speeds up with HR, arteries turn purple as SpO₂ drops,
+ * the body breathes at RR and glows with the NEWS2 state colour.
  */
-export function Avatar3D({ state, heartRate, respRate, spo2, height = 380 }: Props) {
+export function Avatar3D({ state, heartRate, respRate, spo2, anchors = [], anchorEls }: Props) {
   const mount = useRef<HTMLDivElement>(null);
-  const live = useRef({ state, heartRate, respRate, spo2 });
-  live.current = { state, heartRate, respRate, spo2 };
+  const live = useRef({ state, heartRate, respRate, spo2, anchors });
+  live.current = { state, heartRate, respRate, spo2, anchors };
   const [failed, setFailed] = useState(() => typeof window !== 'undefined' && !webglAvailable());
   const [loaded, setLoaded] = useState(false);
 
@@ -71,28 +69,26 @@ export function Avatar3D({ state, heartRate, respRate, spo2, height = 380 }: Pro
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.setSize(el.clientWidth, el.clientHeight);
-    el.appendChild(renderer.domElement);
+    renderer.domElement.style.position = 'absolute';
+    renderer.domElement.style.inset = '0';
+    el.prepend(renderer.domElement);
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(28, el.clientWidth / el.clientHeight, 0.05, 50);
-    camera.position.set(0, 0.95, 4.4);
+    camera.position.set(0, 0.92, 4.3);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 0.9, 0);
     controls.enableDamping = true;
     controls.enableZoom = false;
     controls.enablePan = false;
-    controls.minPolarAngle = Math.PI * 0.3;
-    controls.maxPolarAngle = Math.PI * 0.7;
+    controls.minPolarAngle = Math.PI * 0.35;
+    controls.maxPolarAngle = Math.PI * 0.65;
 
-    scene.add(new THREE.HemisphereLight(0xdfe6f0, 0x1a1c20, 1.1));
-    const key = new THREE.DirectionalLight(0xffffff, 2.2);
+    scene.add(new THREE.HemisphereLight(0xdff0e6, 0x0b1410, 1.0));
+    const key = new THREE.DirectionalLight(0xffffff, 2.0);
     key.position.set(1.5, 3, 2.5);
     scene.add(key);
-    const rim = new THREE.DirectionalLight(0xffffff, 1.6);
-    rim.position.set(0, 2, -3);
-    scene.add(rim);
 
-    // Blood flow: each vessel vertex carries `_flow` = distance from the heart (m).
     const flowPhase = { value: 0 };
     const addFlow = (material: THREE.Material, outward: boolean) => {
       material.onBeforeCompile = (sh) => {
@@ -117,18 +113,21 @@ export function Avatar3D({ state, heartRate, respRate, spo2, height = 380 }: Pro
     let artery: THREE.MeshStandardMaterial | null = null;
     let disposed = false;
 
-    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-    loader.load(
+    new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(
       MODEL_URL,
       (gltf) => {
         if (disposed) return;
         model = gltf.scene;
         const body = model.getObjectByName('Body') as THREE.Mesh;
         skin = body.material as THREE.MeshStandardMaterial;
-        skin.depthWrite = false; // translucent skin over the vessels
+        // hologram skin: green wireframe over the vessels
+        skin.wireframe = true;
+        skin.color.setHex(0x4ade80);
+        skin.opacity = 0.06;
+        skin.transparent = true;
+        skin.depthWrite = false;
         body.renderOrder = 2;
-        const arteries = model.getObjectByName('Arteries') as THREE.Mesh;
-        artery = arteries.material as THREE.MeshStandardMaterial;
+        artery = (model.getObjectByName('Arteries') as THREE.Mesh).material as THREE.MeshStandardMaterial;
         addFlow(artery, true);
         addFlow((model.getObjectByName('Veins') as THREE.Mesh).material as THREE.Material, false);
         heart = new THREE.Group();
@@ -157,9 +156,10 @@ export function Avatar3D({ state, heartRate, respRate, spo2, height = 380 }: Pro
     ro.observe(el);
 
     const clock = new THREE.Clock();
+    const v3 = new THREE.Vector3();
+    const auraColor = new THREE.Color();
     let t = 0;
     let beatPhase = 0;
-    const auraColor = new THREE.Color();
     renderer.setAnimationLoop(() => {
       const dt = Math.min(clock.getDelta(), 0.1);
       t += dt;
@@ -167,7 +167,6 @@ export function Avatar3D({ state, heartRate, respRate, spo2, height = 380 }: Pro
       const hr = Math.max(30, Math.min(180, v.heartRate || 60));
       flowPhase.value += dt * 0.55 * (hr / 69);
       beatPhase = (beatPhase + dt * (hr / 60)) % 1;
-
       if (heart) heart.scale.setScalar(1 + 0.07 * Math.exp(-beatPhase * 14));
       if (model) {
         const breath = Math.sin(t * 2 * Math.PI * (Math.max(6, v.respRate || 14) / 60));
@@ -178,13 +177,29 @@ export function Avatar3D({ state, heartRate, respRate, spo2, height = 380 }: Pro
         artery.color.copy(ARTERY_OXY).lerp(ARTERY_HYPOXIC, hypoxia);
       }
       if (skin) {
+        // hologram stays green when normal; tints toward the NEWS2 colour otherwise
         auraColor.setHex(AURA[v.state]);
-        const pulse = v.state === 'high' ? 0.5 + 0.5 * Math.sin(t * 8) : v.state === 'medium' ? 0.7 + 0.3 * Math.sin(t * 3) : 1;
+        const pulse = v.state === 'high' ? 0.5 + 0.5 * Math.sin(t * 8) : 1;
+        skin.color.copy(auraColor);
         skin.emissive.copy(auraColor);
-        skin.emissiveIntensity = (v.state === 'optimal' ? 0.12 : 0.3) * pulse;
+        skin.emissiveIntensity = 0.25 * pulse;
+        skin.opacity = v.state === 'high' ? 0.06 + 0.06 * pulse : 0.06;
       }
       controls.update();
       renderer.render(scene, camera);
+
+      // project anchors to screen space and move their DOM elements
+      if (anchorEls) {
+        const w = el.clientWidth;
+        const h = el.clientHeight;
+        for (const a of v.anchors) {
+          const node = anchorEls.current[a.id];
+          if (!node) continue;
+          v3.set(...a.pos).project(camera);
+          node.style.transform = `translate(${((v3.x + 1) / 2) * w}px, ${((1 - v3.y) / 2) * h}px)`;
+          node.style.visibility = model ? 'visible' : 'hidden';
+        }
+      }
     });
 
     return () => {
@@ -202,27 +217,20 @@ export function Avatar3D({ state, heartRate, respRate, spo2, height = 380 }: Pro
       renderer.dispose();
       renderer.domElement.remove();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [failed]);
 
-  if (failed) return <Avatar state={state} respRate={respRate} />;
-
-  const aura = `#${AURA[state].toString(16).padStart(6, '0')}`;
-  return (
-    <figure className="flex w-full flex-col items-center gap-2" aria-label={`3D astronaut avatar: ${LABEL[state]}. Heart rate ${heartRate}, SpO₂ ${spo2}%.`}>
-      <div
-        ref={mount}
-        className="relative w-full cursor-grab overflow-hidden rounded-xl active:cursor-grabbing"
-        style={{ height, background: `radial-gradient(ellipse at 50% 45%, ${aura}22, transparent 65%)` }}
-      >
-        {!loaded && <div className="label absolute inset-0 flex items-center justify-center">Loading 3D model…</div>}
-        <div className="pointer-events-none absolute left-2 top-2 flex flex-col gap-1 font-mono text-[11px]">
-          <span className="text-nogo">♥ {heartRate} bpm</span>
-          <span style={{ color: spo2 < 94 ? '#c084fc' : '#7dd3fc' }}>O₂ {spo2}%</span>
-          <span className="text-dim">RR {respRate}/min</span>
-        </div>
-        <span className="pointer-events-none absolute bottom-2 right-2 text-[10px] text-dim">drag to rotate</span>
+  if (failed) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Avatar state={state} respRate={respRate} />
       </div>
-      <figcaption className="label" style={{ color: aura }}>{LABEL[state]}</figcaption>
-    </figure>
+    );
+  }
+
+  return (
+    <div ref={mount} className="absolute inset-0" aria-hidden>
+      {!loaded && <div className="label absolute inset-0 flex items-center justify-center">Loading hologram…</div>}
+    </div>
   );
 }

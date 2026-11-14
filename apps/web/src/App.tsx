@@ -1,58 +1,38 @@
-import { useCallback, useEffect, useState } from 'react';
-import { api, minutesAgo, type CrewState, type Meta } from './api';
-import { Crew } from './screens/Crew';
-import { Home } from './screens/Home';
-import { Readiness } from './screens/Readiness';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import type { Symptom, SymptomDef } from '@astro-care/engine';
+import { api, minutesAgo, type CrewState, type Meta, type Scenario } from './api';
+import { BodyPanel } from './components/BodyPanel';
+import { PvtPanel } from './components/PvtPanel';
+import { QrCard } from './components/QrCard';
 import { useTelemetry } from './useTelemetry';
-
-type View = 'home' | 'test' | 'crew';
 
 /** Real DONKI solar particle event: GOES-P SEISS >100 MeV, 11 May 2024. */
 const STORM_TIME = '2024-05-11T06:00:00Z';
+const PVT_SECONDS = 30; // demo length; validated PVT-B is 3 min
+const IS_LIVE = new URLSearchParams(location.search).has('live');
+const GUEST = 'GUEST';
+const MISSION_START = Date.now() - (4 * 3600 + 32 * 60) * 1000;
 
-const PRESETS = {
-  rested: async (id: string) => {
-    await api.reset(id);
-    await api.care(id, 'sleep', 7.5, minutesAgo(180));
-    await api.care(id, 'food', 700, minutesAgo(80));
-    await api.care(id, 'water', 500, minutesAgo(60));
-    await api.care(id, 'water', 250, minutesAgo(20));
-    await api.care(id, 'urine', 2, minutesAgo(15));
-    await api.care(id, 'exercise', 30, minutesAgo(120));
-    await api.scenario(id, 'nominal');
-  },
-  dehydrated: async (id: string) => {
-    await api.reset(id);
-    await api.care(id, 'sleep', 7, minutesAgo(300));
-    await api.care(id, 'food', 700, minutesAgo(120));
-    await api.care(id, 'water', 100, minutesAgo(150));
-    await api.care(id, 'urine', 6, minutesAgo(200));
-    await api.scenario(id, 'dehydrated');
-  },
-  fatigued: async (id: string) => {
-    await api.reset(id);
-    await api.care(id, 'sleep', 4, minutesAgo(120));
-    await api.care(id, 'food', 500, minutesAgo(90));
-    await api.care(id, 'water', 600, minutesAgo(40));
-    await api.care(id, 'urine', 3, minutesAgo(10));
-    await api.scenario(id, 'fatigued');
-  },
-  hypoxic: async (id: string) => {
-    await api.reset(id);
-    await api.care(id, 'sleep', 7, minutesAgo(200));
-    await api.care(id, 'water', 500, minutesAgo(60));
-    await api.scenario(id, 'hypoxic');
-  },
+const PRESETS: Record<string, { scenario: Scenario; care: [Parameters<typeof api.care>[1], number, number][] }> = {
+  rested: { scenario: 'nominal', care: [['sleep', 7.5, 180], ['food', 700, 80], ['water', 500, 60], ['water', 250, 20], ['urine', 2, 15]] },
+  dehydrated: { scenario: 'dehydrated', care: [['sleep', 7, 300], ['food', 700, 120], ['water', 100, 150], ['urine', 6, 200]] },
+  fatigued: { scenario: 'fatigued', care: [['sleep', 4, 120], ['food', 500, 90], ['water', 600, 40], ['urine', 3, 10]] },
+  hypoxic: { scenario: 'hypoxic', care: [['sleep', 7, 200], ['water', 500, 60], ['urine', 2, 30]] },
 };
+
+type GuestCheck = NonNullable<NonNullable<ReturnType<typeof useTelemetry>['frames'][string]>['lastCheck']>;
 
 export default function App() {
   const [meta, setMeta] = useState<Meta | null>(null);
   const [crew, setCrew] = useState<CrewState[]>([]);
-  const [selected, setSelected] = useState('C001');
-  const [view, setView] = useState<View>('home');
+  const [selected, setSelected] = useState(IS_LIVE ? GUEST : 'C001');
   const [storm, setStorm] = useState(false);
-  const { frames, connected } = useTelemetry();
+  const [symptoms, setSymptoms] = useState<Symptom[]>([]);
+  const [visited, setVisited] = useState(false);
+  const [pvtProgress, setPvtProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const { frames, connected } = useTelemetry();
 
   const refresh = useCallback(async () => {
     try {
@@ -64,67 +44,184 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    api.meta().then(setMeta).catch(() => setError('Habitat server unreachable. Start it with `npm run dev`.'));
+    api.meta().then(setMeta).catch(() => setError('Habitat server unreachable.'));
     refresh();
   }, [refresh]);
 
   const current = crew.find((c) => c.id === selected);
-  const updateOne = (c: CrewState) => setCrew((all) => all.map((x) => (x.id === c.id ? c : x)));
+  const frame = frames[selected];
 
-  async function applyPreset(p: keyof typeof PRESETS) {
-    await PRESETS[p](selected);
+  const toggle = (zone: string, s: SymptomDef) =>
+    setSymptoms((cur) => (cur.some((x) => x.id === s.id) ? cur.filter((x) => x.id !== s.id) : [...cur, { id: s.id, zone, label: s.label, severity: s.defaultSeverity }]));
+
+  async function applyPreset(name: string) {
+    const p = PRESETS[name];
+    await api.reset(selected);
+    for (const [type, value, ago] of p.care) await api.care(selected, type, value, minutesAgo(ago));
+    await api.scenario(selected, p.scenario);
+    setSymptoms([]);
     await refresh();
-    setView('home');
+  }
+
+  async function care(type: 'water' | 'food' | 'urine') {
+    await api.care(selected, type, type === 'water' ? 250 : type === 'food' ? 700 : 3);
+    await refresh();
+  }
+
+  const qrUrl = useMemo(() => {
+    const host = meta?.lanHosts?.[0];
+    if (!host) return `${location.origin}/?live`;
+    return host.startsWith('http') ? `${host.replace(/\/$/, '')}/?live` : `http://${host}:${location.port}/?live`;
+  }, [meta]);
+
+  // Big screen: announce when a judge finishes the live test on their phone.
+  const guestCheck = frames[GUEST]?.lastCheck ?? null;
+  const [toast, setToast] = useState<GuestCheck | null>(null);
+  const seenGuestId = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (IS_LIVE || !frames[GUEST]) return;
+    const id = guestCheck?.id ?? null;
+    if (seenGuestId.current === undefined) {
+      seenGuestId.current = id; // first frame: don't replay an old result
+      return;
+    }
+    if (guestCheck && id !== seenGuestId.current) {
+      seenGuestId.current = id;
+      setToast(guestCheck);
+      const t = window.setTimeout(() => setToast(null), 9000);
+      return () => window.clearTimeout(t);
+    }
+  }, [guestCheck, frames]);
+
+  const progress = 20 + (visited || symptoms.length ? 20 : 0) + pvtProgress * 60;
+  const vitals = frame?.vitals ?? current?.vitals;
+  const news2 = frame?.news2 ?? current?.news2;
+
+  if (IS_LIVE) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-xl flex-col gap-3 p-3">
+        <Header subtitle="Live fatigue test" />
+        {meta && <PvtPanel crewId={GUEST} tasks={meta.tasks} symptoms={[]} durationS={PVT_SECONDS} />}
+        <p className="label text-center">Your result appears on the big screen</p>
+      </div>
+    );
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 py-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-baseline gap-3">
-          <h1 className="font-mono text-xl font-black tracking-widest">ASTRO<span className="text-signal">-</span>CARE</h1>
-          <span className="hidden text-xs text-dim sm:inline">Artemis lunar surface · offline habitat</span>
-        </div>
-        <nav className="flex gap-1" aria-label="Main">
-          {(['home', 'crew'] as const).map((v) => (
-            <button key={v} onClick={() => { setView(v); refresh(); }} aria-current={view === v} className={`min-h-10 rounded-lg px-3 text-sm ${view === v ? 'bg-line' : 'text-dim hover:text-white'}`}>
-              {v === 'home' ? 'Me' : 'Crew'}
-            </button>
-          ))}
-        </nav>
-      </header>
-
-      <div className="panel flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 text-sm">
-        <label className="flex items-center gap-2">
-          <span className="label">Crew</span>
-          <select value={selected} onChange={(e) => { setSelected(e.target.value); setView('home'); }} className="rounded border border-line bg-void px-2 py-1">
-            {crew.map((c) => <option key={c.id} value={c.id}>{c.id} · {c.role}</option>)}
+    <div className="mx-auto flex min-h-screen max-w-[1400px] flex-col gap-4 px-4 py-4">
+      <Header
+        subtitle="Medical console"
+        right={
+          <select
+            value={selected}
+            onChange={(e) => { setSelected(e.target.value); setSymptoms([]); setPvtProgress(0); setVisited(false); }}
+            className="rounded border border-line bg-void px-2 py-1 font-mono text-xs"
+            aria-label="Crew member"
+          >
+            {crew.filter((c) => c.id !== GUEST).map((c) => <option key={c.id} value={c.id}>{c.id} · {c.role}</option>)}
           </select>
-        </label>
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={storm} onChange={(e) => setStorm(e.target.checked)} />
-          <span>Space weather: <b className={storm ? 'text-nogo' : 'text-go'}>{storm ? '11 May 2024 solar storm (DONKI)' : 'nominal'}</b></span>
-        </label>
-        <div className="ml-auto flex items-center gap-1">
-          <span className="label">Demo</span>
-          {(Object.keys(PRESETS) as (keyof typeof PRESETS)[]).map((p) => (
-            <button key={p} onClick={() => applyPreset(p)} className="rounded border border-line px-2 py-1 text-xs hover:border-signal">{p}</button>
-          ))}
-        </div>
-      </div>
+        }
+      />
 
-      {error && <div role="alert" className="rounded-lg border border-nogo/50 p-3 text-sm text-nogo">{error}</div>}
+      {error && <div role="alert" className="rounded border border-nogo/50 p-3 font-mono text-sm text-nogo">{error}</div>}
 
-      <main className="flex-1">
-        {current && meta && view === 'home' && <Home crew={current} frame={frames[current.id]} live={connected} onChange={updateOne} onStartTest={() => setView('test')} />}
-        {current && meta && view === 'test' && (
-          <Readiness key={current.id} crew={current} frame={frames[current.id]} meta={meta} missionTime={storm ? STORM_TIME : undefined} onCrewChange={updateOne} onExit={() => { setView('home'); refresh(); }} />
+      {meta && current && vitals && news2 && (
+        <main className="grid flex-1 gap-4 lg:grid-cols-[1fr_1.15fr]">
+          <BodyPanel
+            zones={meta.bodyZones}
+            symptoms={symptoms}
+            onToggle={toggle}
+            onZoneVisited={() => setVisited(true)}
+            vitals={vitals}
+            news2={news2}
+            avatar={frame?.avatar ?? current.avatar}
+            live={connected}
+            progress={progress}
+            waterMl={current.intake.waterMlLast3h}
+            onCare={care}
+          />
+          <div className="flex flex-col gap-4">
+            <PvtPanel
+              key={selected}
+              crewId={selected}
+              tasks={meta.tasks}
+              symptoms={symptoms}
+              missionTime={storm ? STORM_TIME : undefined}
+              durationS={PVT_SECONDS}
+              onProgress={setPvtProgress}
+              onVerdict={() => refresh()}
+            />
+            <QrCard url={qrUrl} />
+          </div>
+        </main>
+      )}
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 40, opacity: 0 }}
+            role="status"
+            className={`fixed bottom-16 left-1/2 z-50 -translate-x-1/2 rounded-xl border-2 bg-void px-6 py-4 text-center shadow-2xl ${toast.verdict === 'GO' ? 'border-hud' : 'border-nogo'}`}
+          >
+            <div className="label">Live test from phone</div>
+            <div className={`hud-title text-5xl ${toast.verdict === 'GO' ? 'text-hud' : 'text-nogo'}`}>{toast.verdict === 'GO' ? 'GO' : 'NO-GO'}</div>
+            {toast.pvt && <div className="font-mono text-sm">median {toast.pvt.medianMs} ms · {toast.pvt.lapses} lapses</div>}
+          </motion.div>
         )}
-        {view === 'crew' && <Crew crew={crew} frames={frames} onSelect={(id) => { setSelected(id); setView('home'); }} />}
-      </main>
+      </AnimatePresence>
 
-      <footer className="pb-2 text-center text-[11px] text-dim">
-        Data: NASA OSDR OSD-569 / OSD-575 (Inspiration4 crew blood tests) · NASA DONKI space weather · NASA HRP risks · NEWS2 (RCP 2017) · PVT-B. Live vitals simulated (wearable feed). Decision support only.
-      </footer>
+      <StatusBar connected={connected} storm={storm} onStorm={setStorm} onPreset={applyPreset} />
     </div>
+  );
+}
+
+function Header({ subtitle, right }: { subtitle: string; right?: React.ReactNode }) {
+  return (
+    <header className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
+        <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden>
+          <circle cx="20" cy="20" r="18" fill="none" stroke="#4ade80" strokeWidth="1.5" opacity="0.6" />
+          <path d="M20 8 v24 M8 20 h24" stroke="#4ade80" strokeWidth="5" strokeLinecap="round" />
+          <circle cx="20" cy="20" r="4" fill="#040706" stroke="#4ade80" strokeWidth="1.5" />
+        </svg>
+        <h1 className="hud-title text-2xl sm:text-3xl">
+          ASTRO-CARE <span className="text-dim">{subtitle}</span>
+        </h1>
+      </div>
+      {right}
+    </header>
+  );
+}
+
+function StatusBar({ connected, storm, onStorm, onPreset }: { connected: boolean; storm: boolean; onStorm: (v: boolean) => void; onPreset: (p: string) => void }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const s = Math.floor((now - MISSION_START) / 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const elapsed = `T+${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
+
+  return (
+    <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-line pt-3 font-mono text-[11px] uppercase tracking-wider text-dim">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
+        <span>System diagnostics: <b className="text-white">stable</b></span>
+        <span>Telemetry link: <b className={connected ? 'text-hud' : 'text-nogo'}>{connected ? 'active' : 'lost'}</b></span>
+        <label className="flex items-center gap-1.5">
+          <input type="checkbox" checked={storm} onChange={(e) => onStorm(e.target.checked)} />
+          Space weather: <b className={storm ? 'text-nogo' : 'text-hud'}>{storm ? 'SEP event 11-May-2024 (DONKI)' : 'nominal'}</b>
+        </label>
+        <span>Time elapsed: <b className="text-white">{elapsed}</b></span>
+      </div>
+      <div className="flex items-center gap-1">
+        <span>Demo</span>
+        {Object.keys(PRESETS).map((p) => (
+          <button key={p} onClick={() => onPreset(p)} className="rounded border border-line px-2 py-0.5 normal-case hover:border-hud hover:text-white">{p}</button>
+        ))}
+      </div>
+    </footer>
   );
 }

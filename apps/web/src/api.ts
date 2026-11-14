@@ -17,12 +17,19 @@ import type {
 export type Scenario = 'nominal' | 'dehydrated' | 'fatigued' | 'hypoxic';
 
 /** One live telemetry frame per crew member (SSE, 1 Hz). */
+export interface PvtSummary {
+  medianMs: number;
+  lapses: number;
+  slowdownPct: number;
+}
+
 export interface TelemetryFrame {
   id: string;
   scenario: Scenario;
   vitals: Vitals;
   news2: News2Breakdown;
   avatar: AvatarState;
+  lastCheck: { id: string; verdict: 'GO' | 'NO_GO'; task: TaskId; timestamp: string; pvt?: PvtSummary } | null;
 }
 
 export type CareType = 'water' | 'food' | 'exercise' | 'urine' | 'stool' | 'sleep';
@@ -56,6 +63,7 @@ export interface Meta {
   bodyZones: { zone: string; label: string; symptoms: SymptomDef[] }[];
   timepoints: string[];
   scenarios: Scenario[];
+  lanHosts: string[];
   sources: { osdr: { id: string; name: string; url: string }[]; donki: string };
 }
 
@@ -72,6 +80,7 @@ export interface LabRow {
 export interface CheckResponse extends VerdictResult {
   id: string;
   crewId: string;
+  pvt?: PvtSummary;
   input: { labs?: LabPanel };
 }
 
@@ -95,7 +104,7 @@ export const api = {
   reset: (id: string) => j<CrewState>(`/crew/${id}/reset`, { method: 'POST' }),
   check: (
     id: string,
-    body: { task: TaskId; pvt: PvtResult; symptoms: Symptom[]; sleepHours: number; consciousness: Acvpu; missionTime?: string },
+    body: { task: TaskId; pvt: PvtResult; symptoms: Symptom[]; sleepHours?: number; consciousness: Acvpu; missionTime?: string },
   ) => j<CheckResponse>(`/crew/${id}/check`, { method: 'POST', body: JSON.stringify(body) }),
 };
 
