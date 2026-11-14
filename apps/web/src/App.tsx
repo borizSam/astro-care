@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { Symptom, SymptomDef } from '@astro-care/engine';
 import { api, minutesAgo, type CrewState, type Meta, type Scenario } from './api';
 import { BodyPanel } from './components/BodyPanel';
+import { CrewStrip } from './components/CrewStrip';
 import { PvtPanel } from './components/PvtPanel';
 import { QrCard } from './components/QrCard';
 import { useTelemetry } from './useTelemetry';
@@ -49,6 +50,14 @@ export default function App() {
   }, [refresh]);
 
   const current = crew.find((c) => c.id === selected);
+
+  function selectCrew(id: string) {
+    setSelected(id);
+    setSymptoms([]);
+    setPvtProgress(0);
+    setVisited(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
   const frame = frames[selected];
 
   const toggle = (zone: string, s: SymptomDef) =>
@@ -111,16 +120,7 @@ export default function App() {
     <div className="mx-auto flex min-h-screen max-w-[1400px] flex-col gap-4 px-4 py-4">
       <Header
         subtitle="Consola médica"
-        right={
-          <select
-            value={selected}
-            onChange={(e) => { setSelected(e.target.value); setSymptoms([]); setPvtProgress(0); setVisited(false); }}
-            className="rounded border border-line bg-void px-2 py-1 font-mono text-xs"
-            aria-label="Tripulante"
-          >
-            {crew.filter((c) => c.id !== GUEST).map((c) => <option key={c.id} value={c.id}>{c.id} · {c.role}</option>)}
-          </select>
-        }
+        right={current && <span className="font-mono text-xs text-dim">Tripulante: <b className="text-hud">{current.id} · {current.role}</b></span>}
       />
 
       {error && <div role="alert" className="rounded border border-nogo/50 p-3 font-mono text-sm text-nogo">{error}</div>}
@@ -154,6 +154,10 @@ export default function App() {
             <QrCard url={qrUrl} />
           </div>
         </main>
+      )}
+
+      {crew.length > 0 && (
+        <CrewStrip crew={crew.filter((c) => c.id !== GUEST)} frames={frames} selected={selected} onSelect={selectCrew} />
       )}
 
       <AnimatePresence>
