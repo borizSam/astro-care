@@ -1,0 +1,22 @@
+{
+  "name": "astro-care",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ASTRO-CARE: offline health-monitoring software for Artemis astronauts (NASA Space Apps 2026)",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c cyan,magenta \"npm run dev -w @astro-care/server\" \"npm run dev -w @astro-care/web\"",
+    "build": "npm run build -w @astro-care/web",
+    "test": "npm test -w @astro-care/engine",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "fetch:data": "npm run fetch:data -w @astro-care/server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.7.0"
+  }
+}
