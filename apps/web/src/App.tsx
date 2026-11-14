@@ -3,13 +3,12 @@ import { api, minutesAgo, type CrewState, type Meta } from './api';
 import { Crew } from './screens/Crew';
 import { Home } from './screens/Home';
 import { Readiness } from './screens/Readiness';
+import { useTelemetry } from './useTelemetry';
 
 type View = 'home' | 'test' | 'crew';
 
 /** Real DONKI solar particle event: GOES-P SEISS >100 MeV, 11 May 2024. */
 const STORM_TIME = '2024-05-11T06:00:00Z';
-
-const V = (heartRate: number, systolicBP: number, spo2: number, respRate: number, tempC = 36.7) => ({ heartRate, systolicBP, spo2, respRate, tempC, consciousness: 'A' as const });
 
 const PRESETS = {
   rested: async (id: string) => {
@@ -20,7 +19,7 @@ const PRESETS = {
     await api.care(id, 'water', 250, minutesAgo(20));
     await api.care(id, 'urine', 2, minutesAgo(15));
     await api.care(id, 'exercise', 30, minutesAgo(120));
-    await api.vitals(id, V(60, 120, 98, 14));
+    await api.scenario(id, 'nominal');
   },
   dehydrated: async (id: string) => {
     await api.reset(id);
@@ -28,7 +27,7 @@ const PRESETS = {
     await api.care(id, 'food', 700, minutesAgo(120));
     await api.care(id, 'water', 100, minutesAgo(150));
     await api.care(id, 'urine', 6, minutesAgo(200));
-    await api.vitals(id, V(96, 106, 97, 16));
+    await api.scenario(id, 'dehydrated');
   },
   fatigued: async (id: string) => {
     await api.reset(id);
@@ -36,13 +35,13 @@ const PRESETS = {
     await api.care(id, 'food', 500, minutesAgo(90));
     await api.care(id, 'water', 600, minutesAgo(40));
     await api.care(id, 'urine', 3, minutesAgo(10));
-    await api.vitals(id, V(78, 118, 97, 15));
+    await api.scenario(id, 'fatigued');
   },
   hypoxic: async (id: string) => {
     await api.reset(id);
     await api.care(id, 'sleep', 7, minutesAgo(200));
     await api.care(id, 'water', 500, minutesAgo(60));
-    await api.vitals(id, V(118, 112, 89, 25));
+    await api.scenario(id, 'hypoxic');
   },
 };
 
@@ -52,7 +51,7 @@ export default function App() {
   const [selected, setSelected] = useState('C001');
   const [view, setView] = useState<View>('home');
   const [storm, setStorm] = useState(false);
-  const [labTimepoint, setLabTimepoint] = useState('R+1');
+  const { frames, connected } = useTelemetry();
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -105,12 +104,6 @@ export default function App() {
           <input type="checkbox" checked={storm} onChange={(e) => setStorm(e.target.checked)} />
           <span>Space weather: <b className={storm ? 'text-nogo' : 'text-go'}>{storm ? '11 May 2024 solar storm (DONKI)' : 'nominal'}</b></span>
         </label>
-        <label className="flex items-center gap-2">
-          <span className="label">Blood test</span>
-          <select value={labTimepoint} onChange={(e) => setLabTimepoint(e.target.value)} className="rounded border border-line bg-void px-2 py-1">
-            {meta?.timepoints.map((t) => <option key={t}>{t}</option>)}
-          </select>
-        </label>
         <div className="ml-auto flex items-center gap-1">
           <span className="label">Demo</span>
           {(Object.keys(PRESETS) as (keyof typeof PRESETS)[]).map((p) => (
@@ -122,15 +115,15 @@ export default function App() {
       {error && <div role="alert" className="rounded-lg border border-nogo/50 p-3 text-sm text-nogo">{error}</div>}
 
       <main className="flex-1">
-        {current && meta && view === 'home' && <Home crew={current} labTimepoint={labTimepoint} onChange={updateOne} onStartTest={() => setView('test')} />}
+        {current && meta && view === 'home' && <Home crew={current} frame={frames[current.id]} live={connected} onChange={updateOne} onStartTest={() => setView('test')} />}
         {current && meta && view === 'test' && (
-          <Readiness key={current.id} crew={current} meta={meta} missionTime={storm ? STORM_TIME : undefined} labTimepoint={labTimepoint} onCrewChange={updateOne} onExit={() => { setView('home'); refresh(); }} />
+          <Readiness key={current.id} crew={current} frame={frames[current.id]} meta={meta} missionTime={storm ? STORM_TIME : undefined} onCrewChange={updateOne} onExit={() => { setView('home'); refresh(); }} />
         )}
-        {view === 'crew' && <Crew crew={crew} onSelect={(id) => { setSelected(id); setView('home'); }} />}
+        {view === 'crew' && <Crew crew={crew} frames={frames} onSelect={(id) => { setSelected(id); setView('home'); }} />}
       </main>
 
       <footer className="pb-2 text-center text-[11px] text-dim">
-        Data: NASA OSDR OSD-569 / OSD-575 (Inspiration4 crew blood tests) · NASA DONKI space weather · NASA HRP risks · NEWS2 (RCP 2017) · PVT-B. Vitals baselines simulated. Decision support only.
+        Data: NASA OSDR OSD-569 / OSD-575 (Inspiration4 crew blood tests) · NASA DONKI space weather · NASA HRP risks · NEWS2 (RCP 2017) · PVT-B. Live vitals simulated (wearable feed). Decision support only.
       </footer>
     </div>
   );

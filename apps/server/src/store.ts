@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Vitals, VerdictResult } from '@astro-care/engine';
+import type { VerdictResult } from '@astro-care/engine';
 
 /** Tiny JSON-file store: survives restarts, zero setup. Swap for SQLite if needed. */
 const FILE = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'store.json');
@@ -23,12 +23,11 @@ export interface CheckRecord extends VerdictResult {
 interface Store {
   care: CareEntry[];
   checks: CheckRecord[];
-  vitals: Record<string, Vitals & { at: string }>;
 }
 
 let store: Store = existsSync(FILE)
   ? JSON.parse(readFileSync(FILE, 'utf8'))
-  : { care: [], checks: [], vitals: {} };
+  : { care: [], checks: [] };
 
 function save() {
   writeFileSync(FILE, JSON.stringify(store, null, 1));
@@ -42,15 +41,6 @@ export function addCare(e: CareEntry) {
 
 export function careFor(crewId: string) {
   return store.care.filter((c) => c.crewId === crewId);
-}
-
-export function setVitals(crewId: string, v: Vitals) {
-  store.vitals[crewId] = { ...v, at: new Date().toISOString() };
-  save();
-}
-
-export function vitalsFor(crewId: string) {
-  return store.vitals[crewId] ?? null;
 }
 
 export function addCheck(c: CheckRecord) {
@@ -67,7 +57,6 @@ export function resetCrew(crewId: string) {
   store = {
     care: store.care.filter((c) => c.crewId !== crewId),
     checks: store.checks.filter((c) => c.crewId !== crewId),
-    vitals: Object.fromEntries(Object.entries(store.vitals).filter(([k]) => k !== crewId)),
   };
   save();
 }

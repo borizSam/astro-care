@@ -4,24 +4,27 @@ import { randomUUID } from 'node:crypto';
 import {
   BODY_ZONES,
   TASKS,
-  avatarState,
   careLevels,
   evaluateCheck,
-  news2,
+  type Acvpu,
   type CheckInput,
   type PvtResult,
   type Symptom,
   type TaskId,
-  type Vitals,
 } from '@astro-care/engine';
 import { OSDR_SOURCES, TIMEPOINTS, crewList, labPanelFor, labsFor, solarEventAt, spaceWeatherSummary } from './data';
-import { addCare, addCheck, checksFor, intakeSummary, resetCrew, setVitals, vitalsFor, type CareType } from './store';
+import { addCare, addCheck, checksFor, intakeSummary, resetCrew, type CareType } from './store';
+import { SCENARIOS, allSnapshots, initTelemetry, setConsciousness, setScenario, snapshot, tick, vitalsNow, type Scenario } from './telemetry';
 
 const PORT = Number(process.env.PORT ?? 3001);
+const TELEMETRY_HZ = 1;
+const DEFAULT_LAB_TIMEPOINT = 'R+1';
+
 const app = Fastify({ logger: { level: 'warn' } });
 await app.register(cors, { origin: true });
 
-const DEFAULT_VITALS: Vitals = { respRate: 14, spo2: 98, systolicBP: 120, heartRate: 62, tempC: 36.6, consciousness: 'A' };
+initTelemetry(crewList());
+setInterval(tick, 1000 / TELEMETRY_HZ);
 
 function crewOr404(id: string) {
   const c = crewList().find((x) => x.id === id);
@@ -31,17 +34,13 @@ function crewOr404(id: string) {
 
 function crewState(id: string) {
   const c = crewOr404(id);
-  const vitals = vitalsFor(id) ?? { ...DEFAULT_VITALS, heartRate: c.baseline.heartRate, systolicBP: c.baseline.systolicBP, spo2: c.baseline.spo2, at: null };
   const intake = intakeSummary(id);
-  const lastCheck = checksFor(id)[0] ?? null;
   return {
     ...c,
-    vitals,
-    news2: news2(vitals),
-    avatar: avatarState(vitals),
+    ...snapshot(id),
     intake,
     levels: careLevels(intake.waterMlLast3h, intake.minutesSinceMeal, intake.exerciseMinToday),
-    lastCheck,
+    lastCheck: checksFor(id)[0] ?? null,
   };
 }
 
@@ -51,19 +50,30 @@ app.get('/api/meta', async () => ({
   tasks: Object.values(TASKS),
   bodyZones: BODY_ZONES,
   timepoints: TIMEPOINTS,
+  scenarios: SCENARIOS,
   sources: { osdr: OSDR_SOURCES, donki: 'https://api.nasa.gov (DONKI, CCMC)' },
 }));
 
-app.get('/api/crew', async () => {
-  const sevRank = (s: ReturnType<typeof crewState>) => s.news2.total * 10 + (s.lastCheck?.verdict === 'NO_GO' ? 5 : 0);
-  return crewList().map((c) => crewState(c.id)).sort((a, b) => sevRank(b) - sevRank(a));
-});
-
+app.get('/api/crew', async () => crewList().map((c) => crewState(c.id)));
 app.get<{ Params: { id: string } }>('/api/crew/:id', async (req) => crewState(req.params.id));
+
+/** Live telemetry for the whole crew (Server-Sent Events, 1 Hz). NEWS2 is computed server-side every tick. */
+app.get('/api/telemetry/stream', (req, reply) => {
+  reply.raw.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+  });
+  const send = () => reply.raw.write(`data: ${JSON.stringify(allSnapshots())}\n\n`);
+  send();
+  const id = setInterval(send, 1000 / TELEMETRY_HZ);
+  req.raw.on('close', () => clearInterval(id));
+});
 
 app.get<{ Params: { id: string }; Querystring: { timepoint?: string } }>('/api/crew/:id/labs', async (req) => {
   crewOr404(req.params.id);
-  return { sources: OSDR_SOURCES, rows: labsFor(req.params.id, req.query.timepoint) };
+  return { sources: OSDR_SOURCES, rows: labsFor(req.params.id, req.query.timepoint ?? DEFAULT_LAB_TIMEPOINT) };
 });
 
 app.post<{ Params: { id: string }; Body: { type: CareType; value: number; at?: string } }>('/api/crew/:id/care', async (req, reply) => {
@@ -76,15 +86,19 @@ app.post<{ Params: { id: string }; Body: { type: CareType; value: number; at?: s
   return crewState(req.params.id);
 });
 
-app.put<{ Params: { id: string }; Body: Vitals }>('/api/crew/:id/vitals', async (req) => {
+/** Demo: choose which physiological scenario the simulated wearable follows. */
+app.put<{ Params: { id: string }; Body: { scenario: Scenario } }>('/api/crew/:id/scenario', async (req, reply) => {
   crewOr404(req.params.id);
-  setVitals(req.params.id, req.body);
+  if (!SCENARIOS.includes(req.body?.scenario)) return reply.code(400).send({ error: `scenario must be one of ${SCENARIOS.join(', ')}` });
+  setScenario(req.params.id, req.body.scenario);
   return crewState(req.params.id);
 });
 
 app.post<{ Params: { id: string } }>('/api/crew/:id/reset', async (req) => {
   crewOr404(req.params.id);
   resetCrew(req.params.id);
+  setScenario(req.params.id, 'nominal');
+  setConsciousness(req.params.id, 'A');
   return crewState(req.params.id);
 });
 
@@ -95,38 +109,36 @@ app.get<{ Querystring: { at?: string } }>('/api/space-weather', async (req) => (
 
 interface CheckBody {
   task: TaskId;
-  vitals: Vitals;
   pvt: PvtResult;
   symptoms: Symptom[];
-  sleepHours: number;
+  sleepHours?: number;
+  /** ACVPU observed by a crewmate; the only vital not measured by the wearable */
+  consciousness?: Acvpu;
   /** mission date used for space weather (demo: 2024-05-11T06:00:00Z) */
   missionTime?: string;
-  labTimepoint?: string;
-  intakeOverride?: Partial<CheckInput['intake']>;
-  save?: boolean;
 }
 
 app.post<{ Params: { id: string }; Body: CheckBody }>('/api/crew/:id/check', async (req, reply) => {
   const c = crewOr404(req.params.id);
   const b = req.body;
-  if (!b || !TASKS[b.task] || !b.vitals || !b.pvt) return reply.code(400).send({ error: 'task, vitals and pvt required' });
+  if (!b || !TASKS[b.task] || !b.pvt) return reply.code(400).send({ error: 'task and pvt required' });
+  if (b.consciousness) setConsciousness(c.id, b.consciousness);
+  const vitals = vitalsNow(c.id)!;
   const intake = intakeSummary(c.id);
   const input: CheckInput = {
     task: b.task,
-    vitals: b.vitals,
+    vitals,
     baseline: c.baseline,
     pvt: b.pvt,
     pvtBaselineMedianMs: c.pvtBaselineMedianMs,
-    intake: { waterMlLast3h: intake.waterMlLast3h, minutesSinceMeal: intake.minutesSinceMeal, minutesSinceVoid: intake.minutesSinceVoid, urineColor: intake.urineColor, ...b.intakeOverride },
+    intake: { waterMlLast3h: intake.waterMlLast3h, minutesSinceMeal: intake.minutesSinceMeal, minutesSinceVoid: intake.minutesSinceVoid, urineColor: intake.urineColor },
     symptoms: b.symptoms ?? [],
-    sleepHours: b.sleepHours,
+    sleepHours: b.sleepHours ?? intake.sleepHours ?? 7,
     solarEvent: b.missionTime ? solarEventAt(b.missionTime) : null,
-    labs: b.labTimepoint ? labPanelFor(c.id, b.labTimepoint) : undefined,
+    labs: labPanelFor(c.id, DEFAULT_LAB_TIMEPOINT),
   };
-  setVitals(c.id, b.vitals);
-  const result = evaluateCheck(input);
-  const record = { ...result, id: randomUUID(), crewId: c.id };
-  if (b.save !== false) addCheck(record);
+  const record = { ...evaluateCheck(input), id: randomUUID(), crewId: c.id };
+  addCheck(record);
   return { ...record, input };
 });
 

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import type { Acvpu, Finding, PvtResult, Symptom, TaskId, Vitals } from '@astro-care/engine';
+import type { Acvpu, Finding, PvtResult, Symptom, TaskId } from '@astro-care/engine';
 import { Pvt } from '../components/Pvt';
-import { api, type CheckResponse, type CrewState, type Meta } from '../api';
+import { api, type CheckResponse, type CrewState, type Meta, type TelemetryFrame } from '../api';
+import { News2Panel } from '../components/News2Panel';
 
 const STEPS = ['Task', 'Body', 'Needs', 'Reaction', 'Vitals', 'Verdict'] as const;
 type Step = (typeof STEPS)[number];
@@ -14,20 +15,20 @@ const DEMO_PVT: Record<'rested' | 'fatigued', PvtResult> = {
 
 interface Props {
   crew: CrewState;
+  frame?: TelemetryFrame;
   meta: Meta;
   missionTime?: string;
-  labTimepoint: string;
   onCrewChange: (c: CrewState) => void;
   onExit: () => void;
 }
 
-export function Readiness({ crew, meta, missionTime, labTimepoint, onCrewChange, onExit }: Props) {
+export function Readiness({ crew, frame, meta, missionTime, onCrewChange, onExit }: Props) {
   const [step, setStep] = useState<Step>('Task');
   const [task, setTask] = useState<TaskId>('eva');
   const [symptoms, setSymptoms] = useState<Symptom[]>([]);
   const [sleepHours, setSleepHours] = useState<number>(crew.intake.sleepHours ?? 7);
   const [pvt, setPvt] = useState<PvtResult | null>(null);
-  const [vitals, setVitals] = useState<Vitals>({ ...crew.vitals });
+  const [consciousness, setConsciousness] = useState<Acvpu>('A');
   const [result, setResult] = useState<CheckResponse | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -35,10 +36,10 @@ export function Readiness({ crew, meta, missionTime, labTimepoint, onCrewChange,
   const next = () => setStep(STEPS[Math.min(idx + 1, STEPS.length - 1)]);
   const back = () => (idx === 0 ? onExit() : setStep(STEPS[idx - 1]));
 
-  async function evaluate(save = true) {
+  async function evaluate() {
     setBusy(true);
     try {
-      const r = await api.check(crew.id, { task, vitals, pvt: pvt ?? { reactionTimesMs: [], falseStarts: 0 }, symptoms, sleepHours, missionTime, labTimepoint, save });
+      const r = await api.check(crew.id, { task, pvt: pvt ?? { reactionTimesMs: [], falseStarts: 0 }, symptoms, sleepHours, consciousness, missionTime });
       setResult(r);
       onCrewChange(await api.member(crew.id));
       setStep('Verdict');
@@ -54,7 +55,7 @@ export function Readiness({ crew, meta, missionTime, labTimepoint, onCrewChange,
     else if (f.source === 'void') await api.care(crew.id, 'urine', 3);
     else if (f.source === 'urine') await api.care(crew.id, 'water', 500);
     else if (f.source === 'pvt') return setStep('Reaction');
-    await evaluate(true);
+    await evaluate();
   }
 
   const toggleSymptom = (zone: string, s: { id: string; label: string; defaultSeverity: Symptom['severity'] }) =>
@@ -142,24 +143,12 @@ export function Readiness({ crew, meta, missionTime, labTimepoint, onCrewChange,
           )}
 
           {step === 'Vitals' && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {(
-                [
-                  ['heartRate', 'Heart rate (bpm)'],
-                  ['systolicBP', 'Systolic BP (mmHg)'],
-                  ['spo2', 'SpO₂ (%)'],
-                  ['respRate', 'Resp. rate (/min)'],
-                  ['tempC', 'Temperature (°C)'],
-                ] as const
-              ).map(([k, label]) => (
-                <label key={k} className="flex items-center justify-between gap-3">
-                  <span className="text-sm">{label}</span>
-                  <input type="number" step={k === 'tempC' ? 0.1 : 1} value={vitals[k]} onChange={(e) => setVitals({ ...vitals, [k]: Number(e.target.value) })} className="w-24 rounded-lg border border-line bg-void px-3 py-2 font-mono" />
-                </label>
-              ))}
-              <label className="flex items-center justify-between gap-3 sm:col-span-2">
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-dim">Vitals come live from the wearable. Nothing to type.</p>
+              <News2Panel vitals={{ ...(frame?.vitals ?? crew.vitals), consciousness }} news2={frame?.news2 ?? crew.news2} live={!!frame} />
+              <label className="flex items-center justify-between gap-3">
                 <span className="text-sm">Consciousness, checked by a crewmate (ACVPU)</span>
-                <select value={vitals.consciousness} onChange={(e) => setVitals({ ...vitals, consciousness: e.target.value as Acvpu })} className="rounded-lg border border-line bg-void px-3 py-2">
+                <select value={consciousness} onChange={(e) => setConsciousness(e.target.value as Acvpu)} className="rounded-lg border border-line bg-void px-3 py-2">
                   <option value="A">Alert</option>
                   <option value="C">New confusion</option>
                   <option value="V">Responds to voice</option>
@@ -167,7 +156,6 @@ export function Readiness({ crew, meta, missionTime, labTimepoint, onCrewChange,
                   <option value="U">Unresponsive</option>
                 </select>
               </label>
-              <p className="text-xs text-dim sm:col-span-2">Your baseline: HR {crew.baseline.heartRate} · SBP {crew.baseline.systolicBP} · SpO₂ {crew.baseline.spo2}%</p>
             </div>
           )}
 
@@ -178,7 +166,7 @@ export function Readiness({ crew, meta, missionTime, labTimepoint, onCrewChange,
       <div className="flex justify-between">
         <button onClick={back} className="min-h-11 rounded-lg border border-line px-4">{idx === 0 ? 'Cancel' : step === 'Verdict' ? 'Edit inputs' : 'Back'}</button>
         {step === 'Vitals' ? (
-          <button disabled={busy} onClick={() => evaluate(true)} className="min-h-11 rounded-lg bg-signal px-5 font-semibold text-void disabled:opacity-50">Get verdict</button>
+          <button disabled={busy} onClick={() => evaluate()} className="min-h-11 rounded-lg bg-signal px-5 font-semibold text-void disabled:opacity-50">Get verdict</button>
         ) : step === 'Verdict' ? (
           <button onClick={onExit} className="min-h-11 rounded-lg bg-signal px-5 font-semibold text-void">Back to home</button>
         ) : step !== 'Task' ? (
@@ -215,7 +203,7 @@ function VerdictView({ result, crew, onFix, busy, missionTime }: { result: Check
       <section className="rounded-xl border border-dashed border-line p-3 font-mono text-xs text-dim" aria-label="Flight readiness certificate">
         <div className="mb-1 text-[10px] uppercase tracking-widest">Flight readiness certificate</div>
         <div>{crew.id} ({crew.role}) · {result.task} · {go ? 'GO' : 'NO-GO'} · {new Date(result.timestamp).toLocaleString()}</div>
-        <div>Check ID {result.id.slice(0, 8)} · {missionTime ? `space weather @ ${missionTime.slice(0, 16)}Z (NASA DONKI)` : 'space weather nominal'} · labs NASA OSDR</div>
+        <div>Check ID {result.id.slice(0, 8)} · {missionTime ? `space weather @ ${missionTime.slice(0, 16)}Z (NASA DONKI)` : 'space weather nominal'} · blood test NASA OSDR (Inspiration4)</div>
         <div className="mt-1">Decision support only. Commander / flight surgeon makes the final call.</div>
       </section>
     </div>
@@ -238,7 +226,7 @@ function FindingRow({ f, kind, onFix, busy }: { f: Finding; kind: 'block' | 'adv
 }
 
 function stepTitle(s: Step) {
-  return { Task: 'Choose the task', Body: 'Body check', Needs: 'Needs before the suit', Reaction: 'Reaction test', Vitals: 'Vitals', Verdict: 'Verdict' }[s];
+  return { Task: 'Choose the task', Body: 'Body check', Needs: 'Needs before the suit', Reaction: 'Reaction test', Vitals: 'Live vitals', Verdict: 'Verdict' }[s];
 }
 
 function fmtMin(m: number) {
