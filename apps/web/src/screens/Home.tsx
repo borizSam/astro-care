@@ -1,4 +1,4 @@
-import { Avatar } from '../components/Avatar';
+import { Avatar3D } from '../components/Avatar3D';
 import { Bars } from '../components/Bars';
 import { CareDock } from '../components/CareDock';
 import { LabsCard } from '../components/LabsCard';
@@ -13,7 +13,7 @@ export function Home({ crew, labTimepoint, onChange, onStartTest }: { crew: Crew
           <span className="label">{crew.id} · {crew.role}</span>
           <span className="font-mono text-xs text-dim">NEWS2 {crew.news2.total}</span>
         </div>
-        <Avatar state={crew.avatar} respRate={v.respRate} />
+        <Avatar3D state={crew.avatar} heartRate={v.heartRate} respRate={v.respRate} spo2={v.spo2} />
         <dl className="grid w-full grid-cols-5 gap-2 text-center font-mono text-sm">
           {[
             ['HR', v.heartRate],

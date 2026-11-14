@@ -9,6 +9,8 @@ type View = 'home' | 'test' | 'crew';
 /** Real DONKI solar particle event: GOES-P SEISS >100 MeV, 11 May 2024. */
 const STORM_TIME = '2024-05-11T06:00:00Z';
 
+const V = (heartRate: number, systolicBP: number, spo2: number, respRate: number, tempC = 36.7) => ({ heartRate, systolicBP, spo2, respRate, tempC, consciousness: 'A' as const });
+
 const PRESETS = {
   rested: async (id: string) => {
     await api.reset(id);
@@ -18,6 +20,7 @@ const PRESETS = {
     await api.care(id, 'water', 250, minutesAgo(20));
     await api.care(id, 'urine', 2, minutesAgo(15));
     await api.care(id, 'exercise', 30, minutesAgo(120));
+    await api.vitals(id, V(60, 120, 98, 14));
   },
   dehydrated: async (id: string) => {
     await api.reset(id);
@@ -25,6 +28,7 @@ const PRESETS = {
     await api.care(id, 'food', 700, minutesAgo(120));
     await api.care(id, 'water', 100, minutesAgo(150));
     await api.care(id, 'urine', 6, minutesAgo(200));
+    await api.vitals(id, V(96, 106, 97, 16));
   },
   fatigued: async (id: string) => {
     await api.reset(id);
@@ -32,6 +36,13 @@ const PRESETS = {
     await api.care(id, 'food', 500, minutesAgo(90));
     await api.care(id, 'water', 600, minutesAgo(40));
     await api.care(id, 'urine', 3, minutesAgo(10));
+    await api.vitals(id, V(78, 118, 97, 15));
+  },
+  hypoxic: async (id: string) => {
+    await api.reset(id);
+    await api.care(id, 'sleep', 7, minutesAgo(200));
+    await api.care(id, 'water', 500, minutesAgo(60));
+    await api.vitals(id, V(118, 112, 89, 25));
   },
 };
 

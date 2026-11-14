@@ -77,6 +77,7 @@ export const api = {
   labs: (id: string, timepoint: string) => j<{ rows: LabRow[] }>(`/crew/${id}/labs?timepoint=${encodeURIComponent(timepoint)}`),
   care: (id: string, type: CareType, value: number, at?: string) =>
     j<CrewState>(`/crew/${id}/care`, { method: 'POST', body: JSON.stringify({ type, value, at }) }),
+  vitals: (id: string, v: Vitals) => j<CrewState>(`/crew/${id}/vitals`, { method: 'PUT', body: JSON.stringify(v) }),
   reset: (id: string) => j<CrewState>(`/crew/${id}/reset`, { method: 'POST' }),
   check: (
     id: string,
