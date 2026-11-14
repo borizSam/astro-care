@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import type { News2Breakdown, Symptom, SymptomDef, Vitals, AvatarState } from '@astro-care/engine';
 import { Avatar3D, type Anchor } from './Avatar3D';
+import { News2Legend } from './News2Legend';
 
 /** Hotspot positions on the model (metres, feet at y = 0). */
 const ANCHORS: Anchor[] = [
@@ -110,6 +111,7 @@ export function BodyPanel({ zones, symptoms, onToggle, vitals, news2, avatar, li
           </div>
           <span className={`font-mono text-xs ${live ? 'text-hud' : 'text-nogo'}`}>{live ? '● EN DIRECTO' : '○ SIN SEÑAL'}</span>
         </div>
+        <News2Legend news2={news2} vitals={vitals} />
         <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
           <span className="label">Necesidades</span>
           <button onClick={() => onCare('water')} className="rounded border border-line px-2 py-1 hover:border-hud">+250 ml agua</button>
