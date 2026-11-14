@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { Symptom, SymptomDef } from '@astro-care/engine';
 import { api, minutesAgo, type CrewState, type Meta, type Scenario } from './api';
 import { BodyPanel } from './components/BodyPanel';
-import { CrewStrip } from './components/CrewStrip';
+import { CREW_STATE, CrewOverlay } from './components/CrewStrip';
 import { PvtPanel } from './components/PvtPanel';
 import { QrCard } from './components/QrCard';
 import { useTelemetry } from './useTelemetry';
@@ -56,8 +56,11 @@ export default function App() {
     setSymptoms([]);
     setPvtProgress(0);
     setVisited(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
+  const [showCrew, setShowCrew] = useState(false);
+  const crewMembers = crew.filter((c) => c.id !== GUEST);
+  const crewAlerts = crewMembers.filter((c) => (frames[c.id]?.avatar ?? c.avatar) !== 'optimal').length;
   const frame = frames[selected];
 
   const toggle = (zone: string, s: SymptomDef) =>
@@ -156,9 +159,17 @@ export default function App() {
         </main>
       )}
 
-      {crew.length > 0 && (
-        <CrewStrip crew={crew.filter((c) => c.id !== GUEST)} frames={frames} selected={selected} onSelect={selectCrew} />
-      )}
+      <AnimatePresence>
+        {showCrew && (
+          <CrewOverlay
+            crew={crewMembers}
+            frames={frames}
+            selected={selected}
+            onSelect={(id) => { selectCrew(id); setShowCrew(false); }}
+            onClose={() => setShowCrew(false)}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {toast && (
@@ -176,7 +187,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <StatusBar connected={connected} storm={storm} onStorm={setStorm} onPreset={applyPreset} />
+      <StatusBar connected={connected} storm={storm} onStorm={setStorm} onPreset={applyPreset} onCrew={() => setShowCrew(true)} crewAlerts={crewAlerts} />
     </div>
   );
 }
@@ -199,7 +210,7 @@ function Header({ subtitle, right }: { subtitle: string; right?: React.ReactNode
   );
 }
 
-function StatusBar({ connected, storm, onStorm, onPreset }: { connected: boolean; storm: boolean; onStorm: (v: boolean) => void; onPreset: (p: string) => void }) {
+function StatusBar({ connected, storm, onStorm, onPreset, onCrew, crewAlerts }: { connected: boolean; storm: boolean; onStorm: (v: boolean) => void; onPreset: (p: string) => void; onCrew: () => void; crewAlerts: number }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000);
@@ -212,6 +223,17 @@ function StatusBar({ connected, storm, onStorm, onPreset }: { connected: boolean
   return (
     <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-line pt-3 font-mono text-[11px] uppercase tracking-wider text-dim">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
+        <button
+          onClick={onCrew}
+          className="flex items-center gap-2 rounded-md border border-hud bg-hud/10 px-3 py-1.5 font-bold text-hud hover:bg-hud/20"
+        >
+          Estado de tripulación
+          {crewAlerts > 0 && (
+            <span className="rounded-full px-1.5 text-[10px] text-void" style={{ background: CREW_STATE.medium.color }}>
+              {crewAlerts} {crewAlerts === 1 ? 'alerta' : 'alertas'}
+            </span>
+          )}
+        </button>
         <span>Diagnóstico del sistema: <b className="text-white">estable</b></span>
         <span>Enlace de telemetría: <b className={connected ? 'text-hud' : 'text-nogo'}>{connected ? 'activo' : 'perdido'}</b></span>
         <label className="flex items-center gap-1.5">

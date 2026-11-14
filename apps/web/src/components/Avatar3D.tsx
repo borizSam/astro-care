@@ -32,6 +32,8 @@ interface Props {
   /** DOM elements positioned every frame at the projected anchor (hotspots, callouts) */
   anchors?: Anchor[];
   anchorEls?: MutableRefObject<Record<string, HTMLElement | null>>;
+  /** small, non-interactive render (crew cards): no orbit controls, lower resolution */
+  compact?: boolean;
 }
 
 function webglAvailable() {
@@ -48,7 +50,7 @@ function webglAvailable() {
  * heart beats at HR, blood flow speeds up with HR, arteries turn purple as SpO₂ drops,
  * the body breathes at RR and glows with the NEWS2 state colour.
  */
-export function Avatar3D({ state, heartRate, respRate, spo2, anchors = [], anchorEls }: Props) {
+export function Avatar3D({ state, heartRate, respRate, spo2, anchors = [], anchorEls, compact = false }: Props) {
   const mount = useRef<HTMLDivElement>(null);
   const live = useRef({ state, heartRate, respRate, spo2, anchors });
   live.current = { state, heartRate, respRate, spo2, anchors };
@@ -66,7 +68,7 @@ export function Avatar3D({ state, heartRate, respRate, spo2, anchors = [], ancho
       setFailed(true);
       return;
     }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(compact ? 1 : Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.setSize(el.clientWidth, el.clientHeight);
     renderer.domElement.style.position = 'absolute';
@@ -83,6 +85,8 @@ export function Avatar3D({ state, heartRate, respRate, spo2, anchors = [], ancho
     controls.enablePan = false;
     controls.minPolarAngle = Math.PI * 0.35;
     controls.maxPolarAngle = Math.PI * 0.65;
+    controls.enabled = !compact;
+    if (compact) renderer.domElement.style.pointerEvents = 'none';
 
     scene.add(new THREE.HemisphereLight(0xdff0e6, 0x0b1410, 1.0));
     const key = new THREE.DirectionalLight(0xffffff, 2.0);
