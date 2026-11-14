@@ -173,7 +173,7 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
   return (
     <section className="hud flex flex-col" aria-label="Prueba de reacción PVT">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5">
-        <h2 className="hud-title">Prueba de reacción PVT <span className="text-dim">(estándar NASA ISS)</span></h2>
+        <h2 className="hud-title">Prueba de reacción PVT <span className="text-dim">(basada en PVT-B · NASA)</span></h2>
         <div className="flex gap-1" role="radiogroup" aria-label="Tarea">
           {tasks.map((t) => (
             <button
@@ -232,7 +232,7 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
                 <div className="label mt-2">Estado PVT: {status}</div>
               </div>
               <p className="font-mono text-xs text-dim">
-                {durationS} s · pulsa el anillo (o la barra espaciadora) en cuanto se ponga verde · {rts.current.length} respuestas · {falseStarts.current} salidas en falso
+                {durationS} s (versión demo; la validada dura 3 min) · pulsa el anillo (o la barra espaciadora) en cuanto se ponga verde · {rts.current.length} respuestas · {falseStarts.current} salidas en falso
               </p>
             </>
           ) : (
