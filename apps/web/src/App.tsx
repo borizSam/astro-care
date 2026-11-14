@@ -15,10 +15,10 @@ const GUEST = 'GUEST';
 const MISSION_START = Date.now() - (4 * 3600 + 32 * 60) * 1000;
 
 const PRESETS: Record<string, { scenario: Scenario; care: [Parameters<typeof api.care>[1], number, number][] }> = {
-  rested: { scenario: 'nominal', care: [['sleep', 7.5, 180], ['food', 700, 80], ['water', 500, 60], ['water', 250, 20], ['urine', 2, 15]] },
-  dehydrated: { scenario: 'dehydrated', care: [['sleep', 7, 300], ['food', 700, 120], ['water', 100, 150], ['urine', 6, 200]] },
-  fatigued: { scenario: 'fatigued', care: [['sleep', 4, 120], ['food', 500, 90], ['water', 600, 40], ['urine', 3, 10]] },
-  hypoxic: { scenario: 'hypoxic', care: [['sleep', 7, 200], ['water', 500, 60], ['urine', 2, 30]] },
+  descansado: { scenario: 'nominal', care: [['sleep', 7.5, 180], ['food', 700, 80], ['water', 500, 60], ['water', 250, 20], ['urine', 2, 15]] },
+  deshidratado: { scenario: 'dehydrated', care: [['sleep', 7, 300], ['food', 700, 120], ['water', 100, 150], ['urine', 6, 200]] },
+  fatigado: { scenario: 'fatigued', care: [['sleep', 4, 120], ['food', 500, 90], ['water', 600, 40], ['urine', 3, 10]] },
+  hipoxia: { scenario: 'hypoxic', care: [['sleep', 7, 200], ['water', 500, 60], ['urine', 2, 30]] },
 };
 
 type GuestCheck = NonNullable<NonNullable<ReturnType<typeof useTelemetry>['frames'][string]>['lastCheck']>;
@@ -39,12 +39,12 @@ export default function App() {
       setCrew(await api.crew());
       setError(null);
     } catch {
-      setError('Habitat server unreachable. Start it with `npm run dev`.');
+      setError('No se puede conectar con el servidor del hábitat. Arráncalo con `npm run dev`.');
     }
   }, []);
 
   useEffect(() => {
-    api.meta().then(setMeta).catch(() => setError('Habitat server unreachable.'));
+    api.meta().then(setMeta).catch(() => setError('No se puede conectar con el servidor del hábitat.'));
     refresh();
   }, [refresh]);
 
@@ -100,9 +100,9 @@ export default function App() {
   if (IS_LIVE) {
     return (
       <div className="mx-auto flex min-h-screen max-w-xl flex-col gap-3 p-3">
-        <Header subtitle="Live fatigue test" />
+        <Header subtitle="Test de fatiga en directo" />
         {meta && <PvtPanel crewId={GUEST} tasks={meta.tasks} symptoms={[]} durationS={PVT_SECONDS} />}
-        <p className="label text-center">Your result appears on the big screen</p>
+        <p className="label text-center">Tu resultado aparece en la pantalla grande</p>
       </div>
     );
   }
@@ -110,13 +110,13 @@ export default function App() {
   return (
     <div className="mx-auto flex min-h-screen max-w-[1400px] flex-col gap-4 px-4 py-4">
       <Header
-        subtitle="Medical console"
+        subtitle="Consola médica"
         right={
           <select
             value={selected}
             onChange={(e) => { setSelected(e.target.value); setSymptoms([]); setPvtProgress(0); setVisited(false); }}
             className="rounded border border-line bg-void px-2 py-1 font-mono text-xs"
-            aria-label="Crew member"
+            aria-label="Tripulante"
           >
             {crew.filter((c) => c.id !== GUEST).map((c) => <option key={c.id} value={c.id}>{c.id} · {c.role}</option>)}
           </select>
@@ -165,9 +165,9 @@ export default function App() {
             role="status"
             className={`fixed bottom-16 left-1/2 z-50 -translate-x-1/2 rounded-xl border-2 bg-void px-6 py-4 text-center shadow-2xl ${toast.verdict === 'GO' ? 'border-hud' : 'border-nogo'}`}
           >
-            <div className="label">Live test from phone</div>
+            <div className="label">Test en directo desde el móvil</div>
             <div className={`hud-title text-5xl ${toast.verdict === 'GO' ? 'text-hud' : 'text-nogo'}`}>{toast.verdict === 'GO' ? 'GO' : 'NO-GO'}</div>
-            {toast.pvt && <div className="font-mono text-sm">median {toast.pvt.medianMs} ms · {toast.pvt.lapses} lapses</div>}
+            {toast.pvt && <div className="font-mono text-sm">mediana {toast.pvt.medianMs} ms · {toast.pvt.lapses} lapsus</div>}
           </motion.div>
         )}
       </AnimatePresence>
@@ -208,13 +208,13 @@ function StatusBar({ connected, storm, onStorm, onPreset }: { connected: boolean
   return (
     <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-line pt-3 font-mono text-[11px] uppercase tracking-wider text-dim">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
-        <span>System diagnostics: <b className="text-white">stable</b></span>
-        <span>Telemetry link: <b className={connected ? 'text-hud' : 'text-nogo'}>{connected ? 'active' : 'lost'}</b></span>
+        <span>Diagnóstico del sistema: <b className="text-white">estable</b></span>
+        <span>Enlace de telemetría: <b className={connected ? 'text-hud' : 'text-nogo'}>{connected ? 'activo' : 'perdido'}</b></span>
         <label className="flex items-center gap-1.5">
           <input type="checkbox" checked={storm} onChange={(e) => onStorm(e.target.checked)} />
-          Space weather: <b className={storm ? 'text-nogo' : 'text-hud'}>{storm ? 'SEP event 11-May-2024 (DONKI)' : 'nominal'}</b>
+          Clima espacial: <b className={storm ? 'text-nogo' : 'text-hud'}>{storm ? 'evento SEP 11-may-2024 (DONKI)' : 'normal'}</b>
         </label>
-        <span>Time elapsed: <b className="text-white">{elapsed}</b></span>
+        <span>Tiempo de misión: <b className="text-white">{elapsed}</b></span>
       </div>
       <div className="flex items-center gap-1">
         <span>Demo</span>

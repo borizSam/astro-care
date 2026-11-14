@@ -27,7 +27,7 @@ npm test           # engine tests
 npm run fetch:data # re-download NASA data (optional; cached copies are committed)
 ```
 
-Open http://localhost:5173. Use the **Demo** buttons (rested / dehydrated / fatigued) and the **space weather** toggle to reproduce the pitch scenarios.
+Open http://localhost:5173. UI in Spanish. Use the **Demo** buttons (descansado / deshidratado / fatigado / hipoxia) and the **space weather** toggle to reproduce the pitch scenarios.
 
 ## NASA data used
 

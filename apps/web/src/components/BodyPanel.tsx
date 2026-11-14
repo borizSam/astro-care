@@ -13,9 +13,9 @@ const ANCHORS: Anchor[] = [
 ];
 
 function risk(n: News2Breakdown) {
-  if (n.total >= 7) return { label: 'HIGH RISK', color: 'text-nogo' };
-  if (n.total >= 5 || n.anySingleThree) return { label: 'MEDIUM RISK', color: 'text-orange-400' };
-  if (n.total >= 1) return { label: 'LOW RISK', color: 'text-yellow-400' };
+  if (n.total >= 7) return { label: 'RIESGO ALTO', color: 'text-nogo' };
+  if (n.total >= 5 || n.anySingleThree) return { label: 'RIESGO MEDIO', color: 'text-orange-400' };
+  if (n.total >= 1) return { label: 'RIESGO BAJO', color: 'text-yellow-400' };
   return { label: 'NORMAL', color: 'text-hud' };
 }
 
@@ -43,8 +43,8 @@ export function BodyPanel({ zones, symptoms, onToggle, onZoneVisited, vitals, ne
   const openGroup = open ? group(open) : [];
 
   return (
-    <section className="hud flex flex-col" aria-label="Symptom selection">
-      <h2 className="hud-title border-b border-line px-4 py-2.5">Symptom selection</h2>
+    <section className="hud flex flex-col" aria-label="Selección de síntomas">
+      <h2 className="hud-title border-b border-line px-4 py-2.5">Selección de síntomas</h2>
 
       <div className="grid-bg relative min-h-[380px] flex-1 overflow-hidden">
         <Avatar3D state={avatar} heartRate={vitals.heartRate} respRate={vitals.respRate} spo2={vitals.spo2} anchors={ANCHORS} anchorEls={els} />
@@ -56,7 +56,7 @@ export function BodyPanel({ zones, symptoms, onToggle, onZoneVisited, vitals, ne
               key={z.zone}
               ref={(n) => { els.current[z.zone] = n; }}
               onClick={() => { setOpen(open === z.zone ? null : z.zone); onZoneVisited(); }}
-              aria-label={`${z.label}${active ? ' (symptom selected)' : ''}`}
+              aria-label={`${z.label}${active ? ' (síntoma marcado)' : ''}`}
               aria-expanded={open === z.zone}
               className="invisible absolute left-0 top-0 -ml-5 -mt-5 flex h-10 w-10 items-center justify-center"
             >
@@ -72,16 +72,16 @@ export function BodyPanel({ zones, symptoms, onToggle, onZoneVisited, vitals, ne
             <polyline points="2,44 50,6 90,6" fill="none" stroke="var(--color-hud)" strokeWidth="1.2" />
           </svg>
           <div className="absolute left-[90px] top-[-62px] whitespace-nowrap border border-hud/70 bg-void/85 px-2.5 py-1 font-mono text-sm leading-tight text-hud">
-            Heart rate:<br />
-            <span className="text-white">{vitals.heartRate} bpm</span>
+            Ritmo cardíaco:<br />
+            <span className="text-white">{vitals.heartRate} lpm</span>
           </div>
         </div>
 
         {openGroup.length > 0 && (
-          <div className="absolute bottom-3 left-3 right-3 rounded-lg border border-line bg-void/90 p-3 backdrop-blur" role="dialog" aria-label={`${openGroup[0].label} symptoms`}>
+          <div className="absolute bottom-3 left-3 right-3 rounded-lg border border-line bg-void/90 p-3 backdrop-blur" role="dialog" aria-label={`Síntomas: ${openGroup[0].label}`}>
             <div className="mb-2 flex items-center justify-between">
               <span className="label text-hud">{openGroup.map((g) => g.label).join(' · ')}</span>
-              <button onClick={() => setOpen(null)} className="label hover:text-white" aria-label="Close">✕</button>
+              <button onClick={() => setOpen(null)} className="label hover:text-white" aria-label="Cerrar">✕</button>
             </div>
             <div className="flex flex-wrap gap-2">
               {openGroup.flatMap((g) =>
@@ -105,22 +105,22 @@ export function BodyPanel({ zones, symptoms, onToggle, onZoneVisited, vitals, ne
             NEWS2 <b className={`text-base ${r.color}`}>{news2.total}</b> <span className={r.color}>{r.label}</span>
           </span>
           <span className="text-dim">
-            SpO₂ <b className="text-white">{vitals.spo2}%</b> · RR <b className="text-white">{vitals.respRate}</b> · SBP <b className="text-white">{vitals.systolicBP}</b> · {vitals.tempC.toFixed(1)}°C
+            SpO₂ <b className="text-white">{vitals.spo2}%</b> · FR <b className="text-white">{vitals.respRate}</b> · PAS <b className="text-white">{vitals.systolicBP}</b> · {vitals.tempC.toFixed(1)}°C
           </span>
-          <span className={live ? 'text-hud' : 'text-nogo'}>{live ? '● LIVE' : '○ NO SIGNAL'}</span>
+          <span className={live ? 'text-hud' : 'text-nogo'}>{live ? '● EN DIRECTO' : '○ SIN SEÑAL'}</span>
         </div>
         <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
-          <span className="label">Needs</span>
-          <button onClick={() => onCare('water')} className="rounded border border-line px-2 py-1 hover:border-hud">+250 ml water</button>
-          <button onClick={() => onCare('food')} className="rounded border border-line px-2 py-1 hover:border-hud">meal</button>
-          <button onClick={() => onCare('urine')} className="rounded border border-line px-2 py-1 hover:border-hud">toilet</button>
-          <span className="ml-auto text-dim">water 3 h: <b className={waterMl >= 500 ? 'text-hud' : 'text-amber'}>{waterMl} ml</b></span>
+          <span className="label">Necesidades</span>
+          <button onClick={() => onCare('water')} className="rounded border border-line px-2 py-1 hover:border-hud">+250 ml agua</button>
+          <button onClick={() => onCare('food')} className="rounded border border-line px-2 py-1 hover:border-hud">comida</button>
+          <button onClick={() => onCare('urine')} className="rounded border border-line px-2 py-1 hover:border-hud">baño</button>
+          <span className="ml-auto text-dim">agua 3 h: <b className={waterMl >= 500 ? 'text-hud' : 'text-amber'}>{waterMl} ml</b></span>
         </div>
         <div>
           <div className="h-1.5 overflow-hidden rounded-full bg-line">
             <div className="h-full rounded-full bg-hud shadow-[0_0_10px] shadow-hud transition-[width] duration-500" style={{ width: `${progress}%` }} />
           </div>
-          <div className="label mt-1.5">Diagnostics complete: {Math.round(progress)}%</div>
+          <div className="label mt-1.5">Diagnóstico completado: {Math.round(progress)}%</div>
         </div>
       </div>
     </section>

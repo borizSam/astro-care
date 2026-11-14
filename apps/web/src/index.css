@@ -27,6 +27,7 @@ body,
   font-family: var(--font-display);
 }
 
+@layer components {
 /* Console panel with corner brackets */
 .hud {
   position: relative;
@@ -79,6 +80,8 @@ body,
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-dim);
+}
+
 }
 
 button:focus-visible,

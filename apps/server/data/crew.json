@@ -3,7 +3,7 @@
   "crew": [
     {
       "id": "C001",
-      "role": "Commander",
+      "role": "Comandante",
       "baseline": {
         "heartRate": 58,
         "systolicBP": 122,
@@ -13,7 +13,7 @@
     },
     {
       "id": "C002",
-      "role": "Pilot",
+      "role": "Piloto",
       "baseline": {
         "heartRate": 64,
         "systolicBP": 112,
@@ -23,7 +23,7 @@
     },
     {
       "id": "C003",
-      "role": "Mission Specialist",
+      "role": "Especialista de misión",
       "baseline": {
         "heartRate": 66,
         "systolicBP": 108,
@@ -33,7 +33,7 @@
     },
     {
       "id": "C004",
-      "role": "Mission Specialist",
+      "role": "Especialista de misión",
       "baseline": {
         "heartRate": 60,
         "systolicBP": 126,
@@ -43,7 +43,7 @@
     },
     {
       "id": "GUEST",
-      "role": "Live test (judge)",
+      "role": "Test en directo (jurado)",
       "guest": true,
       "baseline": {
         "heartRate": 70,

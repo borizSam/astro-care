@@ -4,7 +4,7 @@ import type { Task, TaskId } from './types';
 export const TASKS: Record<TaskId, Task> = {
   eva: {
     id: 'eva',
-    label: 'Lunar EVA (6–8 h)',
+    label: 'Paseo lunar (6–8 h)',
     durationH: 7,
     pvtMaxSlowdownPct: 15,
     maxLapses: 2,
@@ -13,7 +13,7 @@ export const TASKS: Record<TaskId, Task> = {
   },
   rover: {
     id: 'rover',
-    label: 'Rover driving',
+    label: 'Conducir el rover',
     durationH: 4,
     pvtMaxSlowdownPct: 15,
     maxLapses: 2,
@@ -22,7 +22,7 @@ export const TASKS: Record<TaskId, Task> = {
   },
   lab: {
     id: 'lab',
-    label: 'Habitat lab work',
+    label: 'Laboratorio del hábitat',
     durationH: 2,
     pvtMaxSlowdownPct: 30,
     maxLapses: 5,

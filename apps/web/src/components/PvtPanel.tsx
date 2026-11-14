@@ -132,7 +132,7 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
     setBusy(true);
     try {
       if (f.source === 'void') await api.care(crewId, 'urine', 3);
-      else if (f.action.toLowerCase().includes('eat')) await api.care(crewId, 'food', 500);
+      else if (f.action.toLowerCase().includes('come')) await api.care(crewId, 'food', 500);
       else await api.care(crewId, 'water', 500);
       const pvt = { reactionTimesMs: rts.current, falseStarts: falseStarts.current };
       await evaluate(pvt);
@@ -141,15 +141,15 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
     }
   }
 
-  const status = { idle: 'STANDBY', waiting: 'RUNNING · WAIT', stimulus: 'RUNNING · TAP NOW', feedback: 'RUNNING', evaluating: 'COMPUTING', verdict: 'COMPLETE' }[phase];
+  const status = { idle: 'EN ESPERA', waiting: 'EN CURSO · ESPERA', stimulus: 'EN CURSO · ¡PULSA!', feedback: 'EN CURSO', evaluating: 'CALCULANDO', verdict: 'COMPLETADA' }[phase];
   const lit = phase === 'stimulus';
   const go = result?.verdict === 'GO';
 
   return (
-    <section className="hud flex flex-col" aria-label="PVT reaction test">
+    <section className="hud flex flex-col" aria-label="Prueba de reacción PVT">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5">
-        <h2 className="hud-title">PVT reaction test <span className="text-dim">(NASA ISS standard)</span></h2>
-        <div className="flex gap-1" role="radiogroup" aria-label="Task">
+        <h2 className="hud-title">Prueba de reacción PVT <span className="text-dim">(estándar NASA ISS)</span></h2>
+        <div className="flex gap-1" role="radiogroup" aria-label="Tarea">
           {tasks.map((t) => (
             <button
               key={t.id}
@@ -159,7 +159,7 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
               onClick={() => setTask(t.id)}
               className={`rounded px-2.5 py-1 font-mono text-[11px] uppercase ${task === t.id ? 'bg-hud text-void' : 'border border-line text-dim hover:text-white'} disabled:opacity-50`}
             >
-              {t.id === 'eva' ? 'EVA' : t.id}
+              {t.id === 'eva' ? 'EVA' : t.id === 'rover' ? 'ROVER' : 'LAB'}
             </button>
           ))}
         </div>
@@ -168,7 +168,7 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
       <div className="grid flex-1 items-center gap-6 p-5 sm:grid-cols-[auto_1fr]">
         <button
           onPointerDown={phase === 'evaluating' ? undefined : respond}
-          aria-label={phase === 'idle' || phase === 'verdict' ? 'Start test' : 'Reaction target'}
+          aria-label={phase === 'idle' || phase === 'verdict' ? 'Iniciar test' : 'Objetivo de reacción'}
           className="relative mx-auto flex h-52 w-52 select-none items-center justify-center rounded-full"
         >
           <motion.span
@@ -182,11 +182,11 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
           <span className="absolute inset-4 rounded-full border border-amber/30" />
           <span className={`absolute inset-6 flex items-center justify-center rounded-full ${lit ? 'bg-hud/90' : 'bg-[radial-gradient(circle,#fff7e6,#e9dcc0)]'}`}>
             <span className={`hud-title text-center text-3xl leading-none ${lit ? 'text-void' : 'text-green-700'}`}>
-              {phase === 'idle' && <>START<br />TEST</>}
-              {phase === 'verdict' && <>REPEAT<br />TEST</>}
-              {phase === 'waiting' && <span className="text-xl text-stone-500">WAIT…</span>}
-              {phase === 'stimulus' && <>TAP!</>}
-              {phase === 'feedback' && <span className="text-xl text-stone-600">{ms < 0 ? 'TOO EARLY' : `${ms} ms`}</span>}
+              {phase === 'idle' && <>INICIAR<br />TEST</>}
+              {phase === 'verdict' && <>REPETIR<br />TEST</>}
+              {phase === 'waiting' && <span className="text-xl text-stone-500">ESPERA…</span>}
+              {phase === 'stimulus' && <>¡YA!</>}
+              {phase === 'feedback' && <span className="text-xl text-stone-600">{ms < 0 ? 'DEMASIADO PRONTO' : `${ms} ms`}</span>}
               {phase === 'evaluating' && <span className="text-lg text-stone-500">…</span>}
             </span>
           </span>
@@ -204,10 +204,10 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
                 <div className="h-1.5 overflow-hidden rounded-full bg-line">
                   <div className="h-full rounded-full bg-[#fde68a] shadow-[0_0_10px_#fde68a] transition-[width] duration-200" style={{ width: `${(running ? elapsed : phase === 'idle' ? 0 : 1) * 100}%` }} />
                 </div>
-                <div className="label mt-2">PVT readiness: {status}</div>
+                <div className="label mt-2">Estado PVT: {status}</div>
               </div>
               <p className="font-mono text-xs text-dim">
-                {durationS} s · tap the ring (or press Space) the moment it turns green · {rts.current.length} responses · {falseStarts.current} false starts
+                {durationS} s · pulsa el anillo (o la barra espaciadora) en cuanto se ponga verde · {rts.current.length} respuestas · {falseStarts.current} salidas en falso
               </p>
             </>
           ) : (
@@ -221,7 +221,7 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
                   <div className="hud-title text-6xl leading-none">{go ? 'GO' : 'NO-GO'}</div>
                   <div className="mt-1 font-mono text-xs text-dim">
                     {tasks.find((t) => t.id === result.task)?.label} · NEWS2 {result.news2}
-                    {result.pvt && <> · median {result.pvt.medianMs} ms ({result.pvt.slowdownPct >= 0 ? '+' : ''}{result.pvt.slowdownPct}%)</>}
+                    {result.pvt && <> · mediana {result.pvt.medianMs} ms ({result.pvt.slowdownPct >= 0 ? '+' : ''}{result.pvt.slowdownPct}%)</>}
                   </div>
                 </motion.div>
                 <ul className="flex max-h-48 flex-col gap-2 overflow-auto">
@@ -229,7 +229,7 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
                     <li key={i} className="flex items-start justify-between gap-2 rounded border border-nogo/40 p-2 font-mono text-xs">
                       <span>{f.reason}<br /><b className="text-white">→ {f.action}</b></span>
                       {f.fixable && (
-                        <button disabled={busy} onClick={() => fix(f)} className="shrink-0 rounded bg-hud px-3 py-1.5 font-bold text-void disabled:opacity-50">DONE</button>
+                        <button disabled={busy} onClick={() => fix(f)} className="shrink-0 rounded bg-hud px-3 py-1.5 font-bold text-void disabled:opacity-50">HECHO</button>
                       )}
                     </li>
                   ))}
@@ -237,7 +237,7 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
                     <li key={`a${i}`} className="rounded border border-line p-2 font-mono text-xs text-dim">{f.reason} → {f.action}</li>
                   ))}
                 </ul>
-                <p className="font-mono text-[10px] text-dim">Decision support only. Commander / flight surgeon makes the final call.</p>
+                <p className="font-mono text-[10px] text-dim">Solo apoyo a la decisión. La decisión final es del comandante o del médico de vuelo.</p>
               </div>
             )
           )}
