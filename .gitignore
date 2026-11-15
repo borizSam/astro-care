@@ -1,7 +1,49 @@
+# Dependencies
 node_modules/
+
+# Build output and caches
 dist/
+build/
+coverage/
+.vite/
+.cache/
+*.tsbuildinfo
+.eslintcache
+
+# Environment and secrets (keep a template if one is added)
 .env
 .env.*
+!.env.example
+*.pem
+*.key
+
+# Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime data written by the habitat server (demo care log and checks)
 apps/server/data/store.json
+
+# Office lock/temp files created while a deck or document is open
+~$*
+*.tmp
+
+# Windows / WSL
+Thumbs.db
+desktop.ini
+*:Zone.Identifier
+*Zone.Identifier
+
+# macOS
 .DS_Store
+
+# Editors and local tool settings
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*~
+.claude/settings.local.json
