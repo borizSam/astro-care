@@ -39,7 +39,7 @@ https://github.com/borizSam/astro-care
 
 ## Use of Super Intelligence (SI)
 *(Only for data collection; judges don't see this answer.)*
-Yes. The idea, the clinical rules and the thresholds were chosen by the team. We used an AI coding assistant (Claude, Anthropic) to help write and review parts of the TypeScript code and tests, and to draft and translate documentation, the pitch script and the English user interface. All AI-assisted code was reviewed and tested by the team. No AI-generated images, video or audio are used. This is also stated in the "Use of AI" section of the repository README.
+Yes. The idea, the clinical rules and the thresholds were chosen by the team. We used an AI coding assistant (Claude, Anthropic) to help write and review parts of the TypeScript code and tests, and to draft and translate documentation, the pitch script and the English user interface. All AI-assisted code was reviewed and tested by the team. The narration of the 30-second demo video is an AI-generated voice (Piper TTS, open-source); this is labelled on screen and in the video metadata. No AI-generated images are used: all visuals are captures of the real app. This is also stated in the "Use of AI" section of the repository README.
 
 ## NASA Data
 - **NASA DONKI (CCMC, via api.nasa.gov):** solar energetic particle events and geomagnetic storms of May 2024 (Kp 9, GOES >100 MeV SEP). The real 11 May 2024 event drives the NO-GO for surface tasks (EVA, rover): the Moon has no magnetic field.
@@ -55,6 +55,7 @@ Yes. The idea, the clinical rules and the thresholds were chosen by the team. We
 - Fonts (SIL Open Font License 1.1): Oswald, JetBrains Mono, via Fontsource.
 - 3D circulatory model: made by the team, optimised with glTF-Transform. **⚠️ Confirm its origin before submitting.**
 - AI assistance: Claude (Anthropic), as described in the SI field.
+- Video narration: Piper TTS (open source, MIT) with the en_GB-alan voice (AI-generated audio).
 - No Space Agency Partner data was used.
 
 ---

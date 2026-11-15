@@ -95,7 +95,8 @@ AI tools were used to speed up development, not to come up with the idea. The co
 
 - **Code:** an AI coding assistant (Claude, Anthropic) helped write and review parts of the TypeScript code (clinical engine, habitat server, web console) and its tests. All AI-assisted code was reviewed and tested by the team.
 - **Text:** AI helped draft and translate documentation, the pitch script and the English UI text.
-- **Images and video:** no AI-generated images or video are used. Screenshots in `docs/img/` are captures of the real app.
+- **Images and video:** no AI-generated images are used; screenshots are captures of the real app.
+- **Audio:** the narration of the 30-second demo video is an AI-generated voice (Piper TTS, open-source, `en_GB-alan` voice). This is shown on screen and stated in the video metadata.
 
 ## License
 
