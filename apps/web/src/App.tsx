@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Symptom, SymptomDef } from '@astro-care/engine';
 import { api, minutesAgo, type CrewState, type Meta, type Scenario } from './api';
 import { BodyPanel } from './components/BodyPanel';
 import { CREW_STATE, CrewOverlay } from './components/CrewStrip';
 import { PvtPanel } from './components/PvtPanel';
-import { QrCard } from './components/QrCard';
+import { News2Table } from './components/News2Legend';
 import { useTelemetry } from './useTelemetry';
 
 /** Real DONKI solar particle event: GOES-P SEISS >100 MeV, 11 May 2024. */
@@ -94,11 +94,6 @@ export default function App() {
     await refresh();
   }
 
-  const qrUrl = useMemo(() => {
-    const host = meta?.lanHosts?.[0];
-    if (!host) return `${location.origin}/?live`;
-    return host.startsWith('http') ? `${host.replace(/\/$/, '')}/?live` : `http://${host}:${location.port}/?live`;
-  }, [meta]);
 
   // Big screen: announce when a judge finishes the live test on their phone.
   const guestCheck = frames[GUEST]?.lastCheck ?? null;
@@ -164,7 +159,7 @@ export default function App() {
               durationS={PVT_SECONDS}
               onVerdict={() => refresh()}
             />
-            <QrCard url={qrUrl} />
+            <News2Table news2={news2} vitals={vitals} />
           </div>
         </main>
       )}

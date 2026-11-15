@@ -111,7 +111,7 @@ export function BodyPanel({ zones, symptoms, onToggle, vitals, news2, avatar, li
           </div>
           <span className={`font-mono text-xs ${live ? 'text-hud' : 'text-nogo'}`}>{live ? '● LIVE' : '○ NO SIGNAL'}</span>
         </div>
-        <News2Legend news2={news2} vitals={vitals} />
+        <News2Legend news2={news2} />
         <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
           <span className="label">Needs</span>
           <button onClick={() => onCare('water')} className="rounded border border-line px-2 py-1 hover:border-hud">+250 ml water</button>
