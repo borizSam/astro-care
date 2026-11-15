@@ -6,9 +6,9 @@ import { Avatar3D } from './Avatar3D';
 
 export const CREW_STATE: Record<AvatarState, { label: string; color: string }> = {
   optimal: { label: 'NORMAL', color: '#4ade80' },
-  low: { label: 'RIESGO BAJO', color: '#eab308' },
-  medium: { label: 'RIESGO MEDIO', color: '#f97316' },
-  high: { label: 'RIESGO ALTO', color: '#f43f5e' },
+  low: { label: 'LOW RISK', color: '#eab308' },
+  medium: { label: 'MEDIUM RISK', color: '#f97316' },
+  high: { label: 'HIGH RISK', color: '#f43f5e' },
 };
 
 interface Props {
@@ -41,14 +41,14 @@ export function CrewOverlay({ crew, frames, selected, onSelect, onClose }: Props
         exit={{ y: 24, scale: 0.98 }}
         role="dialog"
         aria-modal="true"
-        aria-label="Estado de la tripulación"
+        aria-label="Crew status"
         className="hud w-full max-w-6xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
-          <h2 className="hud-title">Estado de la tripulación</h2>
-          <button onClick={onClose} className="rounded border border-line px-3 py-1 font-mono text-xs text-dim hover:border-hud hover:text-white" aria-label="Cerrar">
-            CERRAR ✕
+          <h2 className="hud-title">Crew status</h2>
+          <button onClick={onClose} className="rounded border border-line px-3 py-1 font-mono text-xs text-dim hover:border-hud hover:text-white" aria-label="Close">
+            CLOSE ✕
           </button>
         </div>
         <div className="grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
@@ -82,16 +82,16 @@ export function CrewOverlay({ crew, frames, selected, onSelect, onClose }: Props
                 <div className="flex gap-3 font-mono text-[11px] text-dim">
                   <span>NEWS2 <b style={{ color: s.color }}>{n}</b></span>
                   <span>O₂ <b className="text-white">{v.spo2}%</b></span>
-                  <span>FR <b className="text-white">{v.respRate}</b></span>
+                  <span>RR <b className="text-white">{v.respRate}</b></span>
                 </div>
                 <div className={`font-mono text-[11px] font-bold ${!last ? 'text-dim' : last.verdict === 'GO' ? 'text-hud' : 'text-nogo'}`}>
-                  {last ? `Último test: ${last.verdict === 'GO' ? 'GO' : 'NO-GO'} · ${last.task.toUpperCase()}` : 'Sin test hoy'}
+                  {last ? `Last test: ${last.verdict === 'GO' ? 'GO' : 'NO-GO'} · ${last.task.toUpperCase()}` : 'No test today'}
                 </div>
               </button>
             );
           })}
         </div>
-        <p className="px-4 pb-3 font-mono text-[10px] text-dim">Toca un tripulante para abrir su consola · Esc para cerrar</p>
+        <p className="px-4 pb-3 font-mono text-[10px] text-dim">Tap a crew member to open their console · Esc to close</p>
       </motion.section>
     </motion.div>
   );

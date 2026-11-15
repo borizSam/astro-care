@@ -9,10 +9,10 @@ const AURA: Record<AvatarState, string> = {
 };
 
 const LABEL: Record<AvatarState, string> = {
-  optimal: 'Bien',
-  low: 'Algo cansado',
-  medium: 'Mal: revisa las indicaciones',
-  high: 'Alerta: avisa a la tripulación',
+  optimal: 'Good',
+  low: 'A bit tired',
+  medium: 'Unwell: check the guidance',
+  high: 'Alert: notify the crew',
 };
 
 /** Original layered-SVG astronaut. Pose and breathing follow NEWS2 state and respiratory rate. */
@@ -27,7 +27,7 @@ export function Avatar({ state, respRate, size = 260 }: { state: AvatarState; re
   const aura = AURA[state];
 
   return (
-    <figure className="flex flex-col items-center gap-2" aria-label={`Avatar del astronauta: ${LABEL[state]}`}>
+    <figure className="flex flex-col items-center gap-2" aria-label={`Astronaut avatar: ${LABEL[state]}`}>
       <svg viewBox="0 0 200 240" width={size} height={size * 1.2} role="img">
         <defs>
           <radialGradient id="aura" cx="50%" cy="50%" r="50%">

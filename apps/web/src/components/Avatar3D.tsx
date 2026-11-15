@@ -234,7 +234,7 @@ export function Avatar3D({ state, heartRate, respRate, spo2, anchors = [], ancho
 
   return (
     <div ref={mount} className="absolute inset-0" aria-hidden>
-      {!loaded && <div className="label absolute inset-0 flex items-center justify-center">Cargando holograma…</div>}
+      {!loaded && <div className="label absolute inset-0 flex items-center justify-center">Loading hologram…</div>}
     </div>
   );
 }

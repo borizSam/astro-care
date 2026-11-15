@@ -11,11 +11,11 @@ export function QrCard({ url }: { url: string }) {
   }, [url]);
 
   return (
-    <aside className="flex items-center gap-4 rounded-xl border-4 border-white bg-white p-3 text-black" aria-label="Escanea para iniciar el test en directo">
+    <aside className="flex items-center gap-4 rounded-xl border-4 border-white bg-white p-3 text-black" aria-label="Scan to start the live test">
       <div className="h-28 w-28 shrink-0 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
       <div className="min-w-0">
-        <div className="hud-title text-4xl leading-[0.95] tracking-tight">Escanea para<br />iniciar test<br />en directo</div>
-        <div className="mt-1 text-lg font-semibold">Evalúa tu fatiga ahora.</div>
+        <div className="hud-title text-4xl leading-[0.95] tracking-tight">Scan to<br />start the<br />live test</div>
+        <div className="mt-1 text-lg font-semibold">Check your fatigue now.</div>
         <div className="truncate font-mono text-[10px] text-stone-500">{url}</div>
       </div>
     </aside>

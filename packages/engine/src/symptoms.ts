@@ -11,49 +11,49 @@ export interface SymptomDef {
 export const BODY_ZONES: { zone: string; label: string; symptoms: SymptomDef[] }[] = [
   {
     zone: 'head',
-    label: 'Cabeza',
+    label: 'Head',
     symptoms: [
-      { id: 'headache', label: 'Dolor de cabeza', defaultSeverity: 'mild', hrp: 'CO₂ / hipoxia' },
-      { id: 'dizziness', label: 'Mareo', defaultSeverity: 'moderate', hrp: 'Sensoriomotor' },
-      { id: 'confusion', label: 'Sensación de confusión', defaultSeverity: 'severe', hrp: 'Hipoxia' },
+      { id: 'headache', label: 'Headache', defaultSeverity: 'mild', hrp: 'CO₂ / hypoxia' },
+      { id: 'dizziness', label: 'Dizziness', defaultSeverity: 'moderate', hrp: 'Sensorimotor' },
+      { id: 'confusion', label: 'Feeling confused', defaultSeverity: 'severe', hrp: 'Hypoxia' },
     ],
   },
   {
     zone: 'eyes',
-    label: 'Ojos',
+    label: 'Eyes',
     symptoms: [
-      { id: 'blurred-near', label: 'Visión borrosa de cerca', defaultSeverity: 'moderate', hrp: 'SANS' },
-      { id: 'eye-irritation', label: 'Irritación ocular (polvo)', defaultSeverity: 'mild' },
+      { id: 'blurred-near', label: 'Blurred near vision', defaultSeverity: 'moderate', hrp: 'SANS' },
+      { id: 'eye-irritation', label: 'Eye irritation (dust)', defaultSeverity: 'mild' },
     ],
   },
   {
     zone: 'chest',
-    label: 'Pecho',
+    label: 'Chest',
     symptoms: [
-      { id: 'chest-pain', label: 'Dolor en el pecho', defaultSeverity: 'severe', hrp: 'Cardiovascular' },
-      { id: 'short-breath', label: 'Falta de aire', defaultSeverity: 'moderate' },
-      { id: 'palpitations', label: 'Palpitaciones', defaultSeverity: 'moderate' },
+      { id: 'chest-pain', label: 'Chest pain', defaultSeverity: 'severe', hrp: 'Cardiovascular' },
+      { id: 'short-breath', label: 'Shortness of breath', defaultSeverity: 'moderate' },
+      { id: 'palpitations', label: 'Palpitations', defaultSeverity: 'moderate' },
     ],
   },
   {
     zone: 'abdomen',
     label: 'Abdomen',
     symptoms: [
-      { id: 'nausea', label: 'Náuseas', defaultSeverity: 'moderate' },
-      { id: 'abdominal-pain', label: 'Dolor abdominal', defaultSeverity: 'mild' },
+      { id: 'nausea', label: 'Nausea', defaultSeverity: 'moderate' },
+      { id: 'abdominal-pain', label: 'Abdominal pain', defaultSeverity: 'mild' },
     ],
   },
   {
     zone: 'joints',
-    label: 'Articulaciones',
+    label: 'Joints',
     symptoms: [
-      { id: 'joint-pain', label: 'Dolor articular (hombro, rodilla)', defaultSeverity: 'moderate', hrp: 'Descompresión' },
-      { id: 'tingling', label: 'Hormigueo / entumecimiento', defaultSeverity: 'severe', hrp: 'Descompresión' },
+      { id: 'joint-pain', label: 'Joint pain (shoulder, knee)', defaultSeverity: 'moderate', hrp: 'Decompression' },
+      { id: 'tingling', label: 'Tingling / numbness', defaultSeverity: 'severe', hrp: 'Decompression' },
     ],
   },
   {
     zone: 'skin',
-    label: 'Piel',
-    symptoms: [{ id: 'rash', label: 'Erupción', defaultSeverity: 'mild', hrp: 'Inmunidad (reactivación viral)' }],
+    label: 'Skin',
+    symptoms: [{ id: 'rash', label: 'Rash', defaultSeverity: 'mild', hrp: 'Immunity (viral reactivation)' }],
   },
 ];

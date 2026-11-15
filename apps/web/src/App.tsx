@@ -17,10 +17,10 @@ const GUEST = 'GUEST';
 const SHOWN_TASKS = ['eva', 'lab'];
 
 const PRESETS: Record<string, { scenario: Scenario; care: [Parameters<typeof api.care>[1], number, number][] }> = {
-  descansado: { scenario: 'nominal', care: [['sleep', 7.5, 180], ['food', 700, 80], ['water', 500, 60], ['water', 250, 20], ['urine', 2, 15]] },
-  deshidratado: { scenario: 'dehydrated', care: [['sleep', 7, 300], ['food', 700, 120], ['water', 100, 150], ['urine', 6, 200]] },
-  fatigado: { scenario: 'fatigued', care: [['sleep', 4, 120], ['food', 500, 90], ['water', 600, 40], ['urine', 3, 10]] },
-  hipoxia: { scenario: 'hypoxic', care: [['sleep', 7, 200], ['water', 500, 60], ['urine', 2, 30]] },
+  rested: { scenario: 'nominal', care: [['sleep', 7.5, 180], ['food', 700, 80], ['water', 500, 60], ['water', 250, 20], ['urine', 2, 15]] },
+  dehydrated: { scenario: 'dehydrated', care: [['sleep', 7, 300], ['food', 700, 120], ['water', 100, 150], ['urine', 6, 200]] },
+  fatigued: { scenario: 'fatigued', care: [['sleep', 4, 120], ['food', 500, 90], ['water', 600, 40], ['urine', 3, 10]] },
+  hypoxic: { scenario: 'hypoxic', care: [['sleep', 7, 200], ['water', 500, 60], ['urine', 2, 30]] },
 };
 
 type GuestCheck = NonNullable<NonNullable<ReturnType<typeof useTelemetry>['frames'][string]>['lastCheck']>;
@@ -39,12 +39,12 @@ export default function App() {
       setCrew(await api.crew());
       setError(null);
     } catch {
-      setError('No se puede conectar con el servidor del hábitat. Arráncalo con `npm run dev`.');
+      setError('Cannot reach the habitat server. Start it with `npm run dev`.');
     }
   }, []);
 
   useEffect(() => {
-    api.meta().then(setMeta).catch(() => setError('No se puede conectar con el servidor del hábitat.'));
+    api.meta().then(setMeta).catch(() => setError('Cannot reach the habitat server.'));
     refresh();
   }, [refresh]);
 
@@ -125,9 +125,9 @@ export default function App() {
   if (IS_LIVE) {
     return (
       <div className="mx-auto flex min-h-screen max-w-xl flex-col gap-3 p-3">
-        <Header subtitle="Test de fatiga en directo" />
+        <Header subtitle="Live fatigue test" />
         {meta && <PvtPanel crewId={GUEST} tasks={meta.tasks.filter((t) => SHOWN_TASKS.includes(t.id))} symptoms={[]} durationS={PVT_SECONDS} />}
-        <p className="label text-center">Tu resultado aparece en la pantalla grande</p>
+        <p className="label text-center">Your result appears on the big screen</p>
       </div>
     );
   }
@@ -135,8 +135,8 @@ export default function App() {
   return (
     <div className="mx-auto flex min-h-screen max-w-[1400px] flex-col gap-4 px-4 py-4">
       <Header
-        subtitle="Consola médica"
-        right={current && <span className="font-mono text-xs text-dim">Tripulante: <b className="text-hud">{current.id} · {current.role}</b></span>}
+        subtitle="Medical console"
+        right={current && <span className="font-mono text-xs text-dim">Crew member: <b className="text-hud">{current.id} · {current.role}</b></span>}
       />
 
       {error && <div role="alert" className="rounded border border-nogo/50 p-3 font-mono text-sm text-nogo">{error}</div>}
@@ -190,9 +190,9 @@ export default function App() {
             role="status"
             className={`fixed bottom-16 left-1/2 z-50 -translate-x-1/2 rounded-xl border-2 bg-void px-6 py-4 text-center shadow-2xl ${toast.verdict === 'GO' ? 'border-hud' : 'border-nogo'}`}
           >
-            <div className="label">Test en directo desde el móvil</div>
+            <div className="label">Live test from a phone</div>
             <div className={`hud-title text-5xl ${toast.verdict === 'GO' ? 'text-hud' : 'text-nogo'}`}>{toast.verdict === 'GO' ? 'GO' : 'NO-GO'}</div>
-            {toast.pvt && <div className="font-mono text-sm">mediana {toast.pvt.medianMs} ms · {toast.pvt.lapses} lapsus</div>}
+            {toast.pvt && <div className="font-mono text-sm">median {toast.pvt.medianMs} ms · {toast.pvt.lapses} lapses</div>}
           </motion.div>
         )}
       </AnimatePresence>
@@ -228,17 +228,17 @@ function StatusBar({ connected, storm, onStorm, onCrew, crewAlerts }: { connecte
         onClick={onCrew}
         className="flex items-center gap-2 rounded-md border border-hud bg-hud/10 px-3 py-1.5 font-bold text-hud hover:bg-hud/20"
       >
-        Estado de tripulación
+        Crew status
         {crewAlerts > 0 && (
           <span className="rounded-full px-1.5 text-[10px] text-void" style={{ background: CREW_STATE.medium.color }}>
-            {crewAlerts} {crewAlerts === 1 ? 'alerta' : 'alertas'}
+            {crewAlerts} {crewAlerts === 1 ? 'alert' : 'alerts'}
           </span>
         )}
       </button>
-      <span>Enlace de telemetría: <b className={connected ? 'text-hud' : 'text-nogo'}>{connected ? 'activo' : 'perdido'}</b></span>
+      <span>Telemetry link: <b className={connected ? 'text-hud' : 'text-nogo'}>{connected ? 'active' : 'lost'}</b></span>
       <label className="flex cursor-pointer items-center gap-1.5">
         <input type="checkbox" checked={storm} onChange={(e) => onStorm(e.target.checked)} />
-        Clima espacial (NASA DONKI): <b className={storm ? 'text-nogo' : 'text-hud'}>{storm ? 'tormenta de partículas solares · 11-may-2024' : 'normal'}</b>
+        Space weather (NASA DONKI): <b className={storm ? 'text-nogo' : 'text-hud'}>{storm ? 'solar particle storm · 11 May 2024' : 'normal'}</b>
       </label>
     </footer>
   );
@@ -249,8 +249,8 @@ function DemoPanel({ onPreset, onClose }: { onPreset: (p: string) => void; onClo
   return (
     <div className="fixed bottom-14 right-4 z-50 rounded-lg border border-amber/60 bg-void/95 p-3 font-mono text-xs shadow-2xl">
       <div className="mb-2 flex items-center justify-between gap-6 text-amber">
-        <span>DEMO (presentador)</span>
-        <button onClick={onClose} aria-label="Cerrar demo">✕</button>
+        <span>DEMO (presenter)</span>
+        <button onClick={onClose} aria-label="Close demo">✕</button>
       </div>
       <div className="flex flex-col gap-1">
         {Object.keys(PRESETS).map((p, i) => (
@@ -259,7 +259,7 @@ function DemoPanel({ onPreset, onClose }: { onPreset: (p: string) => void; onClo
           </button>
         ))}
       </div>
-      <div className="mt-2 text-[10px] text-dim">D mostrar/ocultar · 1–4 perfil · S tormenta</div>
+      <div className="mt-2 text-[10px] text-dim">D show/hide · 1–4 profile · S storm</div>
     </div>
   );
 }

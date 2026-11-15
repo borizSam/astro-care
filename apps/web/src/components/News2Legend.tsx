@@ -3,10 +3,10 @@ import type { News2Breakdown, Vitals } from '@astro-care/engine';
 
 /** NEWS2 bands (Royal College of Physicians 2017) and what the crew does in each. */
 const BANDS = [
-  { range: '0', label: 'Normal', action: 'Seguir', color: '#4ade80' },
-  { range: '1–4', label: 'Bajo', action: 'Vigilar', color: '#eab308' },
-  { range: '5–6 o un 3', label: 'Medio', action: 'Avisar médico', color: '#f97316' },
-  { range: '≥ 7', label: 'Alto', action: 'Emergencia', color: '#f43f5e' },
+  { range: '0', label: 'Normal', action: 'Continue', color: '#4ade80' },
+  { range: '1–4', label: 'Low', action: 'Monitor', color: '#eab308' },
+  { range: '5–6 or a 3', label: 'Medium', action: 'Call surgeon', color: '#f97316' },
+  { range: '≥ 7', label: 'High', action: 'Emergency', color: '#f43f5e' },
 ];
 
 function bandIndex(n: News2Breakdown) {
@@ -17,12 +17,12 @@ function bandIndex(n: News2Breakdown) {
 }
 
 const PARAMS: { key: keyof Omit<News2Breakdown, 'total' | 'anySingleThree'>; label: string; value: (v: Vitals) => string; normal: string }[] = [
-  { key: 'respRate', label: 'Frecuencia respiratoria', value: (v) => `${v.respRate} /min`, normal: '12–20' },
-  { key: 'spo2', label: 'Saturación O₂', value: (v) => `${v.spo2} %`, normal: '≥ 96' },
-  { key: 'systolicBP', label: 'Presión sistólica', value: (v) => `${v.systolicBP} mmHg`, normal: '111–219' },
-  { key: 'heartRate', label: 'Pulso', value: (v) => `${v.heartRate} lpm`, normal: '51–90' },
-  { key: 'tempC', label: 'Temperatura', value: (v) => `${v.tempC.toFixed(1).replace('.', ',')} °C`, normal: '36,1–38,0' },
-  { key: 'consciousness', label: 'Consciencia (ACVPU)', value: (v) => (v.consciousness === 'A' ? 'Alerta' : v.consciousness), normal: 'Alerta' },
+  { key: 'respRate', label: 'Respiratory rate', value: (v) => `${v.respRate} /min`, normal: '12–20' },
+  { key: 'spo2', label: 'O₂ saturation', value: (v) => `${v.spo2} %`, normal: '≥ 96' },
+  { key: 'systolicBP', label: 'Systolic BP', value: (v) => `${v.systolicBP} mmHg`, normal: '111–219' },
+  { key: 'heartRate', label: 'Heart rate', value: (v) => `${v.heartRate} bpm`, normal: '51–90' },
+  { key: 'tempC', label: 'Temperature', value: (v) => `${v.tempC.toFixed(1)} °C`, normal: '36.1–38.0' },
+  { key: 'consciousness', label: 'Consciousness (ACVPU)', value: (v) => (v.consciousness === 'A' ? 'Alert' : v.consciousness), normal: 'Alert' },
 ];
 
 const POINT_COLOR = ['#7f9a8c', '#eab308', '#f97316', '#f43f5e'];
@@ -54,23 +54,23 @@ export function News2Legend({ news2, vitals }: { news2: News2Breakdown; vitals: 
           aria-expanded={open}
           className="rounded border border-line px-2 font-mono text-[10px] text-dim hover:border-hud hover:text-white"
         >
-          {open ? 'cerrar' : 'ver tabla'}
+          {open ? 'close' : 'see table'}
         </button>
       </div>
 
       {open && (
-        <div className="absolute bottom-full left-0 right-0 z-20 mb-2 rounded-lg border border-hud/60 bg-void/95 p-3 shadow-2xl backdrop-blur" role="dialog" aria-label="Tabla NEWS2">
+        <div className="absolute bottom-full left-0 right-0 z-20 mb-2 rounded-lg border border-hud/60 bg-void/95 p-3 shadow-2xl backdrop-blur" role="dialog" aria-label="NEWS2 table">
           <div className="mb-2 flex items-baseline justify-between">
-            <span className="label text-hud">Cómo se calcula NEWS2</span>
-            <span className="font-mono text-[10px] text-dim">cada parámetro suma 0–3 puntos</span>
+            <span className="label text-hud">How NEWS2 is calculated</span>
+            <span className="font-mono text-[10px] text-dim">each parameter adds 0–3 points</span>
           </div>
           <table className="w-full font-mono text-xs">
             <thead>
               <tr className="text-left text-[10px] text-dim">
-                <th className="pb-1 font-normal">Parámetro</th>
+                <th className="pb-1 font-normal">Parameter</th>
                 <th className="pb-1 font-normal">Normal</th>
-                <th className="pb-1 text-right font-normal">Ahora</th>
-                <th className="pb-1 text-right font-normal">Puntos</th>
+                <th className="pb-1 text-right font-normal">Now</th>
+                <th className="pb-1 text-right font-normal">Points</th>
               </tr>
             </thead>
             <tbody>
@@ -91,7 +91,7 @@ export function News2Legend({ news2, vitals }: { news2: News2Breakdown; vitals: 
               </tr>
             </tbody>
           </table>
-          <p className="mt-2 text-[10px] text-dim">Escala de alerta temprana que se usa en hospitales (Royal College of Physicians, 2017). La consciencia la marca un compañero.</p>
+          <p className="mt-2 text-[10px] text-dim">Early warning score used in hospitals (Royal College of Physicians, 2017). Consciousness is assessed by a crewmate.</p>
         </div>
       )}
     </div>

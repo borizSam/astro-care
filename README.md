@@ -29,9 +29,9 @@ npm run fetch:data # re-download NASA data (optional; cached copies are committe
 
 Open http://localhost:5173 (or the port Vite prints).
 
-**Presenter controls (hidden from the audience):** `D` shows/hides the demo panel · `1`–`4` load a profile (descansado, deshidratado, fatigado, hipoxia) · `S` toggles the real 11-May-2024 solar storm (NASA DONKI). With a verdict on screen, toggling the storm, a symptom or the task recomputes it instantly with the same reaction test.
+**Presenter controls (hidden from the audience):** `D` shows/hides the demo panel · `1`–`4` load a profile (rested, dehydrated, fatigued, hypoxic) · `S` toggles the real 11-May-2024 solar storm (NASA DONKI). With a verdict on screen, toggling the storm, a symptom or the task recomputes it instantly with the same reaction test.
 
-**Pitch flow (tested end to end):** `2` (dehydrated) → reaction test → NO-GO (water, toilet) → HECHO ×2 → GO (hologram turns green) → `S` → NO-GO (solar particle event; the Moon has no magnetic field).
+**Pitch flow (tested end to end):** `2` (dehydrated) → reaction test → NO-GO (water, toilet) → DONE ×2 → GO (hologram turns green) → `S` → NO-GO (solar particle event; the Moon has no magnetic field).
 
 ## NASA data used
 
@@ -59,3 +59,34 @@ Clinical references: NEWS2 (Royal College of Physicians 2017), PVT-B (Basner & D
 | POST | `/api/crew/:id/check` | run GO / NO-GO with the live vitals; returns findings |
 | POST | `/api/crew/:id/reset` | clear a crew member's log (demo) |
 | GET | `/api/space-weather?at=ISO` | DONKI events + active SEP at that time |
+
+## Team
+
+**Deploy to Mars** · NASA Space Apps Challenge 2026, Barcelona local event: Boris, Antony, Andrea.
+
+## Credits and third-party resources
+
+| Resource | Use | License |
+|---|---|---|
+| NASA OSDR OSD-569 / OSD-575 (Inspiration4 CBC and CMP) | Crew IDs and reference blood tests | NASA open data |
+| NASA DONKI (CCMC) via api.nasa.gov | Real May 2024 solar particle event and geomagnetic storm | NASA open data |
+| NASA Human Research Program risks | Every rule cites its HRP risk | NASA public information |
+| NEWS2, Royal College of Physicians (2017) | Early-warning score thresholds | Published clinical scale (cited) |
+| PVT-B, Basner & Dinges (2011) | Reaction-test design and 355 ms lapse threshold | Published method (cited) |
+| 3D circulatory model (`apps/web/public/models/circulatory.glb`) | Live hologram | Made by the team; optimised with glTF-Transform |
+| React, Vite, Tailwind CSS, Motion, three.js, qrcode, Fastify, Vitest | App, server and tests | MIT |
+| Oswald, JetBrains Mono (via Fontsource) | Typography | SIL Open Font License 1.1 |
+
+No NASA logos or branding are used in the app.
+
+## Use of AI
+
+AI tools were used to speed up development, not to come up with the idea. The concept, the clinical rules and the thresholds were chosen by the team; thresholds marked ⚠️ still need validation by the team nurse and aerospace engineer.
+
+- **Code:** an AI coding assistant (Claude, Anthropic) helped write and review parts of the TypeScript code (clinical engine, habitat server, web console) and its tests. All AI-assisted code was reviewed and tested by the team.
+- **Text:** AI helped draft and translate documentation, the pitch script and the English UI text.
+- **Images and video:** no AI-generated images or video are used. Screenshots in `docs/img/` are captures of the real app.
+
+## License
+
+[MIT](LICENSE) © 2026 Team Deploy to Mars

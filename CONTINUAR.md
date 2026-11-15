@@ -11,13 +11,13 @@ npm test                  # 13 tests del motor clínico
 
 **Controles ocultos para quien presenta:**
 - `D`: panel de demo;
-- `1`–`4`: perfiles (descansado, deshidratado, fatigado, hipoxia);
+- `1`–`4`: perfiles (rested, dehydrated, fatigued, hypoxic);
 - `S`: tormenta solar.
 
-**Historia del pitch:** `2` → prueba de reacción → NO-GO → HECHO ×2 → GO → `S` → NO-GO.
+**Historia del pitch:** `2` → prueba de reacción → NO-GO → DONE ×2 → GO → `S` → NO-GO.
 
 ## Estado al cerrar (14-nov-2026)
-- **App:** consola médica completa, holograma 3D, NEWS2 automático con tabla, prueba de reacción, GO / NO-GO con HECHO, QR para el jurado y estado de tripulación. Toda en español.
+- **App:** consola médica completa, holograma 3D, NEWS2 automático con tabla, prueba de reacción, GO / NO-GO con DONE, QR para el jurado y estado de tripulación. Toda en inglés (requisito de la entrega).
 - **Documentos:** presentación y guiones en [`docs/`](docs/README.md).
 
 ## Pendiente

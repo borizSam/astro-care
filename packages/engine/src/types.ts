@@ -71,6 +71,7 @@ export type FindingSource =
   | 'vitals'
   | 'consciousness'
   | 'hydration'
+  | 'meal'
   | 'void'
   | 'urine'
   | 'symptoms'

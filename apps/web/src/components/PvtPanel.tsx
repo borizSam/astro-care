@@ -6,6 +6,14 @@ import { api, type CheckResponse } from '../api';
 /** No response within this time = lapse (and the test moves on). */
 const NO_RESPONSE_MS = 5000;
 
+/** What tapping DONE logs for each fixable finding (others, e.g. an incomplete test, have no one-tap fix). */
+const CARE_FIX: Partial<Record<Finding['source'], ['water' | 'food' | 'urine', number]>> = {
+  hydration: ['water', 500],
+  urine: ['water', 500],
+  void: ['urine', 3],
+  meal: ['food', 500],
+};
+
 type Phase = 'idle' | 'waiting' | 'stimulus' | 'feedback' | 'evaluating' | 'verdict';
 
 interface Props {
@@ -156,9 +164,9 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
   async function fix(f: Finding) {
     setBusy(true);
     try {
-      if (f.source === 'void') await api.care(crewId, 'urine', 3);
-      else if (f.action.toLowerCase().includes('come')) await api.care(crewId, 'food', 500);
-      else await api.care(crewId, 'water', 500);
+      const care = CARE_FIX[f.source];
+      if (!care) return;
+      await api.care(crewId, care[0], care[1]);
       const pvt = { reactionTimesMs: rts.current, falseStarts: falseStarts.current };
       await evaluate(pvt);
     } finally {
@@ -166,15 +174,15 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
     }
   }
 
-  const status = { idle: 'EN ESPERA', waiting: 'EN CURSO · ESPERA', stimulus: 'EN CURSO · ¡PULSA!', feedback: 'EN CURSO', evaluating: 'CALCULANDO', verdict: 'COMPLETADA' }[phase];
+  const status = { idle: 'STANDBY', waiting: 'RUNNING · WAIT', stimulus: 'RUNNING · TAP!', feedback: 'RUNNING', evaluating: 'COMPUTING', verdict: 'COMPLETE' }[phase];
   const lit = phase === 'stimulus';
   const go = result?.verdict === 'GO';
 
   return (
-    <section className="hud flex flex-col" aria-label="Prueba de reacción PVT">
+    <section className="hud flex flex-col" aria-label="PVT reaction test">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5">
-        <h2 className="hud-title">Prueba de reacción PVT <span className="text-dim">(basada en PVT-B · NASA)</span></h2>
-        <div className="flex gap-1" role="radiogroup" aria-label="Tarea">
+        <h2 className="hud-title">PVT reaction test <span className="text-dim">(based on NASA PVT-B)</span></h2>
+        <div className="flex gap-1" role="radiogroup" aria-label="Task">
           {tasks.map((t) => (
             <button
               key={t.id}
@@ -193,7 +201,7 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
       <div className="grid flex-1 items-center gap-6 p-5 sm:grid-cols-[auto_1fr]">
         <button
           onPointerDown={phase === 'evaluating' ? undefined : respond}
-          aria-label={phase === 'idle' || phase === 'verdict' ? 'Iniciar test' : 'Objetivo de reacción'}
+          aria-label={phase === 'idle' || phase === 'verdict' ? 'Start test' : 'Reaction target'}
           className="relative mx-auto flex h-52 w-52 select-none items-center justify-center rounded-full"
         >
           <motion.span
@@ -207,11 +215,11 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
           <span className="absolute inset-4 rounded-full border border-amber/30" />
           <span className={`absolute inset-6 flex items-center justify-center rounded-full ${lit ? 'bg-hud/90' : 'bg-[radial-gradient(circle,#fff7e6,#e9dcc0)]'}`}>
             <span className={`hud-title text-center text-3xl leading-none ${lit ? 'text-void' : 'text-green-700'}`}>
-              {phase === 'idle' && <>INICIAR<br />TEST</>}
-              {phase === 'verdict' && <>REPETIR<br />TEST</>}
-              {phase === 'waiting' && <span className="text-xl text-stone-500">ESPERA…</span>}
-              {phase === 'stimulus' && <>¡YA!</>}
-              {phase === 'feedback' && <span className="text-xl text-stone-600">{ms === -2 ? 'SIN RESPUESTA' : ms < 0 ? 'DEMASIADO PRONTO' : `${ms} ms`}</span>}
+              {phase === 'idle' && <>START<br />TEST</>}
+              {phase === 'verdict' && <>REPEAT<br />TEST</>}
+              {phase === 'waiting' && <span className="text-xl text-stone-500">WAIT…</span>}
+              {phase === 'stimulus' && <>NOW!</>}
+              {phase === 'feedback' && <span className="text-xl text-stone-600">{ms === -2 ? 'NO RESPONSE' : ms < 0 ? 'TOO EARLY' : `${ms} ms`}</span>}
               {phase === 'evaluating' && <span className="text-lg text-stone-500">…</span>}
             </span>
           </span>
@@ -229,10 +237,10 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
                 <div className="h-1.5 overflow-hidden rounded-full bg-line">
                   <div className="h-full rounded-full bg-[#fde68a] shadow-[0_0_10px_#fde68a] transition-[width] duration-200" style={{ width: `${(running ? elapsed : phase === 'idle' ? 0 : 1) * 100}%` }} />
                 </div>
-                <div className="label mt-2">Estado PVT: {status}</div>
+                <div className="label mt-2">PVT status: {status}</div>
               </div>
               <p className="font-mono text-xs text-dim">
-                {durationS} s (versión demo; la validada dura 3 min) · pulsa el anillo (o la barra espaciadora) en cuanto se ponga verde · {rts.current.length} respuestas · {falseStarts.current} salidas en falso
+                {durationS} s (demo version; the validated test lasts 3 min) · tap the ring (or press Space) as soon as it turns green · {rts.current.length} responses · {falseStarts.current} false starts
               </p>
             </>
           ) : (
@@ -246,15 +254,15 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
                   <div className="hud-title text-6xl leading-none">{go ? 'GO' : 'NO-GO'}</div>
                   <div className="mt-1 font-mono text-xs text-dim">
                     {tasks.find((t) => t.id === result.task)?.label} · NEWS2 {result.news2}
-                    {result.pvt && <> · mediana {result.pvt.medianMs} ms ({result.pvt.slowdownPct >= 0 ? '+' : ''}{result.pvt.slowdownPct}%)</>}
+                    {result.pvt && <> · median {result.pvt.medianMs} ms ({result.pvt.slowdownPct >= 0 ? '+' : ''}{result.pvt.slowdownPct}%)</>}
                   </div>
                 </motion.div>
                 <ul className="flex max-h-48 flex-col gap-2 overflow-auto">
                   {result.blockers.map((f, i) => (
                     <li key={i} className="flex items-start justify-between gap-2 rounded border border-nogo/40 p-2 font-mono text-xs">
                       <span>{f.reason}<br /><b className="text-white">→ {f.action}</b></span>
-                      {f.fixable && (
-                        <button disabled={busy} onClick={() => fix(f)} className="shrink-0 rounded bg-hud px-3 py-1.5 font-bold text-void disabled:opacity-50">HECHO</button>
+                      {f.fixable && CARE_FIX[f.source] && (
+                        <button disabled={busy} onClick={() => fix(f)} className="shrink-0 rounded bg-hud px-3 py-1.5 font-bold text-void disabled:opacity-50">DONE</button>
                       )}
                     </li>
                   ))}
@@ -262,7 +270,7 @@ export function PvtPanel({ crewId, tasks, symptoms, missionTime, durationS, onPr
                     <li key={`a${i}`} className="rounded border border-line p-2 font-mono text-xs text-dim">{f.reason} → {f.action}</li>
                   ))}
                 </ul>
-                <p className="font-mono text-[10px] text-dim">Solo apoyo a la decisión. La decisión final es del comandante o del médico de vuelo.</p>
+                <p className="font-mono text-[10px] text-dim">Decision support only. The final call belongs to the commander or flight surgeon.</p>
               </div>
             )
           )}
