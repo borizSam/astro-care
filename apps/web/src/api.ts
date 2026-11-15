@@ -1,12 +1,12 @@
 import type {
   Acvpu,
   AvatarState,
+  BodyZone,
   CareLevels,
   LabPanel,
   News2Breakdown,
   PvtResult,
   Symptom,
-  SymptomDef,
   Task,
   TaskId,
   VerdictResult,
@@ -60,7 +60,7 @@ export interface CrewState {
 
 export interface Meta {
   tasks: Task[];
-  bodyZones: { zone: string; label: string; symptoms: SymptomDef[] }[];
+  bodyZones: BodyZone[];
   timepoints: string[];
   scenarios: Scenario[];
   lanHosts: string[];
