@@ -6,7 +6,7 @@ import { BodyPanel } from './components/BodyPanel';
 import { CREW_STATE, CrewOverlay } from './components/CrewStrip';
 import { PvtPanel } from './components/PvtPanel';
 import { News2Table } from './components/News2Legend';
-import { TrendPanel } from './components/TrendPanel';
+import { MonitorPanel } from './components/MonitorPanel';
 import { useTelemetry } from './useTelemetry';
 
 /** Real DONKI solar particle event: GOES-P SEISS >100 MeV, 11 May 2024. */
@@ -162,7 +162,7 @@ export default function App() {
               durationS={PVT_SECONDS}
               onVerdict={() => refresh()}
             />
-            <TrendPanel samples={history[selected] ?? []} />
+            <MonitorPanel vitals={vitals} news2={news2} samples={history[selected] ?? []} />
             <News2Table news2={news2} vitals={vitals} />
           </div>
         </main>
