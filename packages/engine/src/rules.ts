@@ -26,7 +26,8 @@ export function pvtStats(pvt: PvtResult, baselineMedianMs: number) {
   const med = median(pvt.reactionTimesMs);
   const lapses = pvt.reactionTimesMs.filter((rt) => rt > PVT_LAPSE_MS).length;
   const slowdownPct = ((med - baselineMedianMs) / baselineMedianMs) * 100;
-  return { medianMs: Math.round(med), lapses, slowdownPct: Math.round(slowdownPct) };
+  // PVT-B counts lapses and false starts together as errors (Basner & Dinges 2011).
+  return { medianMs: Math.round(med), lapses, falseStarts: pvt.falseStarts, errors: lapses + pvt.falseStarts, slowdownPct: Math.round(slowdownPct) };
 }
 
 export function scorePVT(pvt: PvtResult, baselineMedianMs: number, task: Task): Finding[] {
@@ -35,12 +36,12 @@ export function scorePVT(pvt: PvtResult, baselineMedianMs: number, task: Task): 
   }
   const s = pvtStats(pvt, baselineMedianMs);
   const ref = 'PVT-B (Basner & Dinges 2011); NASA HRP risk: cognitive fatigue during EVA, sleep loss';
-  if (s.slowdownPct > task.pvtMaxSlowdownPct || s.lapses > task.maxLapses) {
+  if (s.slowdownPct > task.pvtMaxSlowdownPct || s.errors > task.maxLapses) {
     return [{
       source: 'pvt',
       effect: 'block',
       fixable: false,
-      reason: `Reaction ${s.slowdownPct}% slower than your baseline (${s.medianMs} ms, ${s.lapses} lapses). Limit for this task: ${task.pvtMaxSlowdownPct}%.`,
+      reason: `Reaction ${s.slowdownPct}% slower than your baseline (${s.medianMs} ms, ${s.lapses} lapses, ${s.falseStarts} false starts). Limits for this task: ${task.pvtMaxSlowdownPct}% slower, ${task.maxLapses} errors.`,
       action: 'Rest or sleep, then repeat the check. If urgent, reassign the task.',
       ref,
     }];
@@ -123,8 +124,12 @@ export function scoreSymptoms(symptoms: Symptom[], task: Task): Finding[] {
   });
 }
 
-export function scoreSleep(hours: number, task: Task): Finding[] {
+export function scoreSleep(hours: number | undefined, task: Task): Finding[] {
   const ref = 'NASA HRP risk: sleep loss (ARCHeR actigraphy, Artemis II)';
+  if (hours === undefined) {
+    const critical = task.id === 'eva' || task.id === 'rover';
+    return [{ source: 'sleep', effect: critical ? 'block' : 'advice', fixable: false, reason: 'Sleep not logged: it is never assumed.', action: "Log last night's sleep, then repeat the check.", ref }];
+  }
   if (hours < task.minSleepH) {
     return [{ source: 'sleep', effect: 'block', fixable: false, reason: `Only ${hours} h of sleep.`, action: 'Sleep before attempting this task.', ref }];
   }

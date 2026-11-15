@@ -97,7 +97,8 @@ export interface CheckInput {
   pvtBaselineMedianMs: number;
   intake: IntakeLog;
   symptoms: Symptom[];
-  sleepHours: number;
+  /** undefined = not logged. Never assumed: missing data must not pass silently. */
+  sleepHours: number | undefined;
   solarEvent: SolarParticleEvent | null;
   labs?: LabPanel;
 }

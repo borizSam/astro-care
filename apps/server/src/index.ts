@@ -137,7 +137,15 @@ interface CheckBody {
 app.post<{ Params: { id: string }; Body: CheckBody }>('/api/crew/:id/check', async (req, reply) => {
   const c = crewOr404(req.params.id);
   const b = req.body;
-  if (!b || !TASKS[b.task] || !b.pvt) return reply.code(400).send({ error: 'task and pvt required' });
+  if (!b || !TASKS[b.task]) return reply.code(400).send({ error: `task must be one of ${Object.keys(TASKS).join(', ')}` });
+  // Malformed clinical input is rejected loudly, never scored.
+  const rts = b.pvt?.reactionTimesMs;
+  if (!Array.isArray(rts) || rts.length > 500 || !rts.every((x) => typeof x === 'number' && Number.isFinite(x) && x >= 0 && x <= 60_000)) {
+    return reply.code(400).send({ error: 'pvt.reactionTimesMs must be an array of reaction times in ms (0–60000)' });
+  }
+  if (!Number.isInteger(b.pvt.falseStarts) || b.pvt.falseStarts < 0) return reply.code(400).send({ error: 'pvt.falseStarts must be a non-negative integer' });
+  if (b.symptoms !== undefined && !Array.isArray(b.symptoms)) return reply.code(400).send({ error: 'symptoms must be an array' });
+  if (b.sleepHours !== undefined && !(typeof b.sleepHours === 'number' && b.sleepHours >= 0 && b.sleepHours <= 24)) return reply.code(400).send({ error: 'sleepHours must be 0–24' });
   if (b.consciousness) setConsciousness(c.id, b.consciousness);
   const vitals = vitalsNow(c.id)!;
   // Guest (judge on the QR code) has no care log: use a neutral, well-hydrated intake so only PVT + vitals decide.
@@ -152,11 +160,11 @@ app.post<{ Params: { id: string }; Body: CheckBody }>('/api/crew/:id/check', asy
     pvtBaselineMedianMs: c.pvtBaselineMedianMs,
     intake: { waterMlLast3h: intake.waterMlLast3h, minutesSinceMeal: intake.minutesSinceMeal, minutesSinceVoid: intake.minutesSinceVoid, urineColor: intake.urineColor },
     symptoms: b.symptoms ?? [],
-    sleepHours: b.sleepHours ?? intake.sleepHours ?? 7,
+    sleepHours: b.sleepHours ?? intake.sleepHours, // not logged → engine flags it, never assumes 7 h
     solarEvent: b.missionTime ? solarEventAt(b.missionTime) : null,
     // OSDR blood tests are pre/post-flight, not today's: shown as reference, never used for today's verdict
   };
-  const record = { ...evaluateCheck(input), id: randomUUID(), crewId: c.id, pvt: pvtStats(b.pvt, c.pvtBaselineMedianMs) };
+  const record = { ...evaluateCheck(input), id: randomUUID(), crewId: c.id, pvt: rts.length ? pvtStats(b.pvt, c.pvtBaselineMedianMs) : undefined };
   addCheck(record);
   return { ...record, input };
 });

@@ -46,6 +46,16 @@ Open http://localhost:5173 (or the port Vite prints).
 
 Clinical references: NEWS2 (Royal College of Physicians 2017), PVT-B (Basner & Dinges 2011). Thresholds marked ⚠️ in `packages/engine` must be validated by the team nurse and aerospace engineer.
 
+## Clinical safety design
+
+ASTRO-CARE is clinical decision support, so it follows standard CDSS safety rules:
+
+- **Zero false negatives:** 109 automated tests (`npm test`). Every NEWS2 band edge is checked against the RCP 2017 chart, and any red parameter, non-alert consciousness, NEWS2 ≥ 5, severe symptom, missing reaction test or solar particle event returns NO-GO for every task.
+- **Missing data is never assumed:** if sleep is not logged, the check says so (NO-GO for EVA and rover) instead of assuming a normal night.
+- **Malformed input is rejected** (HTTP 400), never scored.
+- **Published methods:** NEWS2 (RCP 2017) and PVT-B (Basner & Dinges 2011; lapses and false starts both count as errors).
+- **Human in the loop:** every verdict shows the reason, the action and its source; the commander or flight surgeon makes the final call.
+
 ## API (habitat server)
 
 | Method | Path | |
