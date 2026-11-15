@@ -1,40 +1,26 @@
-# Guion del vídeo de 30 segundos (Project Demo)
+# Vídeo de 30 segundos: ASTRO-CARE
 
-**Reglas de la guía oficial:**
-- **30 s como máximo.** Si dura más, el proyecto queda fuera del juicio global. Apuntad a 28 s.
-- Se puede hablar en español, pero **con subtítulos en inglés obligatorios**. Lo más sencillo es hablar en inglés.
-- Sin logos ni elementos de marca de la NASA en nada generado con IA. Si alguna imagen está generada con IA, necesita **marca de agua visible**.
-- No puede salir nadie menor de 18 años.
-- Subidlo a YouTube como **Unlisted** o **Public**. Comprobad el enlace en una ventana privada.
+Archivo: [`ASTRO-CARE-pitch-30s.mp4`](ASTRO-CARE-pitch-30s.mp4) · 29,5 s · 1080p · narración en inglés con voz generada por IA (Piper TTS) y subtítulos en inglés.
+La voz generada por IA se declara en pantalla, en los metadatos del vídeo, en el README y en el formulario del proyecto, como exige el reglamento.
 
-**Lema:** *ASTRO-CARE: Can you go out today?*  
-**Reto:** Create Health Monitoring Software for Astronauts on Space Missions
+**Idea en una frase:** antes de cada tarea crítica, ASTRO-CARE responde una sola pregunta: ¿puedes salir? GO o NO-GO.
 
----
+## Guion (voz = subtítulo)
 
-## Guion en inglés (narración y subtítulos), unas 75 palabras
+| Tiempo | Bloque | En pantalla | Voz y subtítulo |
+|---|---|---|---|
+| 0:00–0:04 | **Gancho** | "7 h" y "3 days" sobre el holograma | Seven hours in a spacesuit. Three days from the nearest hospital. |
+| 0:04–0:08 | **Promesa** | ASTRO-CARE · GO / NO-GO | ASTRO-CARE asks one question before every task: GO, or NO-GO? |
+| 0:08–0:12 | **Cómo** | Monitor de constantes en directo, con alarmas | It reads your vital signs live, like a hospital monitor. |
+| 0:12–0:14.9 | **Prueba** | NO-GO por agua y baño | Dehydrated? NO-GO, and it says why. |
+| 0:14.9–0:16.7 | | GO | Drink, tap DONE: GO. |
+| 0:16.7–0:19.3 | | NO-GO por tormenta solar | A real NASA solar storm? NO-GO. |
+| 0:19.3–0:23.3 | **Confianza** | Zona del abdomen + NEWS2, PVT-B, DONKI, OSDR, 109 pruebas | Proven science, real NASA data. No medical degree needed. |
+| 0:23.3–0:29.5 | **Cierre** | ASTRO-CARE · equipo · datos de la NASA | ASTRO-CARE, by team AstronautsCare. On the Moon and on Earth: the final call stays human. |
 
-| Tiempo | Qué se dice | Qué se ve |
-|---|---|---|
-| **0:00–0:02** | "Hi, I'm Boris, from team AstronautsCare, Barcelona." | Cara a cámara, o el nombre del equipo en pantalla |
-| **0:02–0:05** | "Our challenge: health monitoring for astronauts. On the Moon, the nearest hospital is three days away." | Imagen de la Luna, con el texto "3 days from help" |
-| **0:05–0:10** | "Meet ASTRO-CARE: can you go out today? One clear answer: GO or NO-GO." | Logo y lema; consola con el holograma en verde |
-| **0:10–0:20** | "Wearable vitals feed a live hologram and score NEWS2 every second. A reaction test checks fatigue. Real NASA data, DONKI solar storms and OSDR crew records, shapes the verdict, fully offline." | Grabación de pantalla: tecla `2` → prueba → **NO-GO** → DONE → **GO** → tecla `S` → **NO-GO** |
-| **0:20–0:30** | "Tomorrow, the same tool protects night-shift nurses, pilots and polar crews. Anyone facing a critical task gets a clear GO, and humans keep the final call." | Hospital, cabina de avión y Antártida; al final el logo con "ASTRO-CARE · GO / NO-GO" |
+## En español (para las preguntas)
+> Siete horas dentro de un traje espacial. Tres días hasta el hospital más cercano. ASTRO-CARE hace una sola pregunta antes de cada tarea: ¿GO o NO-GO? Lee tus constantes en directo, como un monitor de hospital. ¿Deshidratado? NO-GO, y te dice por qué. Bebe, pulsa DONE: GO. ¿Una tormenta solar real de la NASA? NO-GO. Ciencia contrastada y datos reales de la NASA; no hace falta ser médico. ASTRO-CARE, del equipo AstronautsCare. En la Luna y en la Tierra, la decisión final sigue siendo humana.
 
----
-
-## Versión hablada en español (con los subtítulos en inglés de arriba)
-
-> "Hola, soy Boris, del equipo AstronautsCare, Barcelona. Nuestro reto: crear software de monitorización de la salud para astronautas. En la Luna, el hospital más cercano está a tres días. Esto es ASTRO-CARE: ¿puedes salir hoy? Una respuesta clara: GO o NO-GO. Las constantes del wearable mueven un holograma en directo y calculan NEWS2 cada segundo. Una prueba de reacción mide la fatiga. Datos reales de la NASA (tormentas solares de DONKI y registros de tripulación de OSDR) deciden el veredicto, sin internet. Mañana, la misma herramienta protege a enfermeras de noche, pilotos y bases polares. Un GO claro antes de cada tarea crítica, y la decisión final sigue siendo humana."
-
-En español se habla más despacio. Si pasa de 30 s, quitad "y bases polares" y "sin internet".
-
----
-
-## Cómo grabar la parte de la demo (0:10–0:20)
-
-1. `npm run dev` y abrid http://localhost:5173 en pantalla completa (F11).
-2. Grabad la pantalla con la Xbox Game Bar (`Win + G`) o con OBS.
-3. Pulsad `2` (deshidratado) → START TEST → haced la prueba **sin pulsar antes de tiempo** (las salidas en falso cuentan como errores) → **NO-GO** → **DONE** ×2 → **GO** → `S` → **NO-GO**.
-4. Al montar, acelerad la prueba de reacción (×4) para que esa parte dure unos 10 s.
+## Al presentar
+- Avisad al técnico de que **el vídeo tiene sonido**.
+- Después vienen **3 minutos de preguntas**: respuestas cortas en [`GUION-DIAPOSITIVAS-ES.docx`](GUION-DIAPOSITIVAS-ES.docx), al final.
