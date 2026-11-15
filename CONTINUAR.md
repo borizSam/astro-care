@@ -14,11 +14,11 @@ npm test                  # 13 tests del motor clínico
 - `1`–`4`: perfiles (descansado, deshidratado, fatigado, hipoxia);
 - `S`: tormenta solar.
 
-**Historia del pitch:** `2` → prueba de reacción → NO-GO → HECHO ×2 → GO → `S` → NO-GO.
+**Historia del pitch (3 min):** `2` → prueba de reacción → NO-GO → HECHO ×2 → GO → `S` → NO-GO → tocar el abdomen.
 
-## Estado al cerrar (14-nov-2026)
-- **App:** consola médica completa, holograma 3D, NEWS2 automático con tabla, prueba de reacción, GO / NO-GO con HECHO, QR para el jurado y estado de tripulación. Toda en español.
-- **Documentos:** presentación y guiones en [`docs/`](docs/README.md).
+## Estado al cerrar (15-nov-2026)
+- **App:** consola médica completa, holograma 3D, NEWS2 automático con tabla, prueba de reacción, GO / NO-GO con HECHO, QR para el jurado y estado de tripulación. Nuevo: cada zona del cuerpo explica qué hace, qué le pasa en el espacio y qué hacer, con su semáforo; gráfica de tendencia de 2 min; rutina de 6 hábitos. Toda en español.
+- **Documentos:** presentación y guion de 3 minutos, y resumen de recursos del reto, en [`docs/`](docs/README.md).
 
 ## Pendiente
 1. **QR desde el móvil:** ahora apunta a la IP interna de WSL. Hay que desplegarlo o arrancar con `PUBLIC_URL=http://<IP-de-Windows>:5174 npm run dev` y redirigir el puerto en Windows.

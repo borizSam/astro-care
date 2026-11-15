@@ -11,13 +11,10 @@ export function QrCard({ url }: { url: string }) {
   }, [url]);
 
   return (
-    <aside className="flex items-center gap-4 rounded-xl border-4 border-white bg-white p-3 text-black" aria-label="Escanea para iniciar el test en directo">
-      <div className="h-28 w-28 shrink-0 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
-      <div className="min-w-0">
-        <div className="hud-title text-4xl leading-[0.95] tracking-tight">Escanea para<br />iniciar test<br />en directo</div>
-        <div className="mt-1 text-lg font-semibold">Evalúa tu fatiga ahora.</div>
-        <div className="truncate font-mono text-[10px] text-stone-500">{url}</div>
-      </div>
+    <aside className="flex w-44 shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl bg-white p-3 text-center text-black" aria-label="Escanea para hacer la prueba de reacción en tu móvil">
+      <div className="h-28 w-28 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
+      <div className="hud-title text-lg leading-none tracking-tight">Pruébalo tú</div>
+      <div className="font-mono text-[10px] leading-tight text-stone-600">Escanea y mide tu fatiga en 30 s</div>
     </aside>
   );
 }

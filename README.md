@@ -2,7 +2,7 @@
 
 **Offline health-monitoring software for Artemis astronauts** · NASA Space Apps Challenge 2026 · Team Deploy to Mars (Barcelona)
 
-A 3D avatar fills the screen and shows each astronaut's health **in real time**: the habitat server streams wearable vitals at 1 Hz and computes **NEWS2 automatically** (nobody types vitals). Water, food, urine, stool, exercise and sleep are logged with one tap. Before any critical lunar-surface task, the **Mission Readiness Test** gives one answer: **GO** or **NO-GO**, with the reason and what to do. Some NO-GOs can be fixed on the spot (e.g. "drink 500 ml" → Done → recalculated).
+A 3D avatar fills the screen and shows each astronaut's health **in real time**: the habitat server streams wearable vitals at 1 Hz and computes **NEWS2 automatically** (nobody types vitals). Water, food, urine, stool, exercise and sleep are logged with one tap. Before any critical lunar-surface task, the **Mission Readiness Test** gives one answer: **GO** or **NO-GO**, with the reason and what to do. Tapping a body zone explains what it does, what spaceflight does to it (NASA HRP risk), what to do, and today's readings with a green / amber / red status. A live trend chart shows the last 2 minutes of pulse, SpO₂ and NEWS2, and a 6-habit daily routine tracks progress. Some NO-GOs can be fixed on the spot (e.g. "drink 500 ml" → Done → recalculated).
 
 > Decision support only. The commander / flight surgeon makes the final call.
 

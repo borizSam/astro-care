@@ -6,6 +6,7 @@ import { BodyPanel } from './components/BodyPanel';
 import { CREW_STATE, CrewOverlay } from './components/CrewStrip';
 import { PvtPanel } from './components/PvtPanel';
 import { QrCard } from './components/QrCard';
+import { TrendPanel } from './components/TrendPanel';
 import { useTelemetry } from './useTelemetry';
 
 /** Real DONKI solar particle event: GOES-P SEISS >100 MeV, 11 May 2024. */
@@ -17,10 +18,10 @@ const GUEST = 'GUEST';
 const SHOWN_TASKS = ['eva', 'lab'];
 
 const PRESETS: Record<string, { scenario: Scenario; care: [Parameters<typeof api.care>[1], number, number][] }> = {
-  descansado: { scenario: 'nominal', care: [['sleep', 7.5, 180], ['food', 700, 80], ['water', 500, 60], ['water', 250, 20], ['urine', 2, 15]] },
-  deshidratado: { scenario: 'dehydrated', care: [['sleep', 7, 300], ['food', 700, 120], ['water', 100, 150], ['urine', 6, 200]] },
+  descansado: { scenario: 'nominal', care: [['exercise', 60, 25], ['sleep', 7.5, 180], ['food', 700, 80], ['water', 500, 60], ['water', 250, 20], ['urine', 2, 15]] },
+  deshidratado: { scenario: 'dehydrated', care: [['exercise', 60, 25], ['sleep', 7, 300], ['food', 700, 120], ['water', 100, 150], ['urine', 6, 200]] },
   fatigado: { scenario: 'fatigued', care: [['sleep', 4, 120], ['food', 500, 90], ['water', 600, 40], ['urine', 3, 10]] },
-  hipoxia: { scenario: 'hypoxic', care: [['sleep', 7, 200], ['water', 500, 60], ['urine', 2, 30]] },
+  hipoxia: { scenario: 'hypoxic', care: [['exercise', 60, 25], ['sleep', 7, 200], ['water', 500, 60], ['urine', 2, 30]] },
 };
 
 type GuestCheck = NonNullable<NonNullable<ReturnType<typeof useTelemetry>['frames'][string]>['lastCheck']>;
@@ -32,7 +33,7 @@ export default function App() {
   const [storm, setStorm] = useState(false);
   const [symptoms, setSymptoms] = useState<Symptom[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const { frames, connected } = useTelemetry();
+  const { frames, history, connected } = useTelemetry();
 
   const refresh = useCallback(async () => {
     try {
@@ -89,8 +90,8 @@ export default function App() {
     await refresh();
   }
 
-  async function care(type: 'water' | 'food' | 'urine') {
-    await api.care(selected, type, type === 'water' ? 250 : type === 'food' ? 700 : 3);
+  async function care(type: 'water' | 'food' | 'urine' | 'exercise') {
+    await api.care(selected, type, { water: 250, food: 700, urine: 3, exercise: 30 }[type]);
     await refresh();
   }
 
@@ -151,7 +152,9 @@ export default function App() {
             news2={news2}
             avatar={frame?.avatar ?? current.avatar}
             live={connected}
-            waterMl={current.intake.waterMlLast3h}
+            intake={current.intake}
+            pvt={frame?.lastCheck?.pvt}
+            checkedToday={!!frame?.lastCheck && new Date(frame.lastCheck.timestamp).toDateString() === new Date().toDateString()}
             onCare={care}
           />
           <div className="flex flex-col gap-4">
@@ -164,7 +167,10 @@ export default function App() {
               durationS={PVT_SECONDS}
               onVerdict={() => refresh()}
             />
-            <QrCard url={qrUrl} />
+            <div className="flex items-stretch gap-4">
+              <TrendPanel samples={history[selected] ?? []} />
+              <QrCard url={qrUrl} />
+            </div>
           </div>
         </main>
       )}

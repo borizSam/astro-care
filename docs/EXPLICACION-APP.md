@@ -8,9 +8,11 @@ Una **consola médica web** que vigila a cada astronauta en tiempo real con un h
 ## 2. Qué ve el usuario
 | Zona | Qué hace |
 |---|---|
-| **Holograma (izquierda)** | Modelo 3D del sistema circulatorio. El corazón late al pulso real, la sangre corre más rápido si sube el pulso, las arterias se vuelven moradas si baja el oxígeno, y el color va según NEWS2. Los puntos verdes se tocan para marcar síntomas. |
+| **Holograma (izquierda)** | Modelo 3D del sistema circulatorio. El corazón late al pulso real, la sangre corre más rápido si sube el pulso, las arterias se vuelven moradas si baja el oxígeno, y el color va según NEWS2. |
+| **Zonas del cuerpo** | Cada punto es una zona (cabeza, pecho, abdomen, piel, articulaciones) con su semáforo: verde, ámbar o rojo. Al tocarla se abre qué hace esa parte, qué le pasa en el espacio (riesgo NASA HRP), qué hacer, sus medidas de hoy y los síntomas que se pueden marcar. |
 | **NEWS2** | Se calcula solo cada segundo. Franja de 4 niveles y botón **"ver tabla"** con el desglose. |
-| **Necesidades** | Agua, comida y baño. Afectan al veredicto antes de tareas largas. |
+| **Rutina** | Seis hábitos del día: agua, comida, baño, ejercicio, sueño y chequeo. Los cuatro primeros se registran con un toque; sueño y chequeo son automáticos. Con 6/6 sale «Día completo». Agua, comida y baño afectan al veredicto antes de tareas largas. |
+| **Tendencia (derecha, abajo)** | Gráfica en directo de pulso, oxígeno y NEWS2 de los últimos 2 minutos, con la banda normal de fondo. Se guarda solo en el navegador: al recargar empieza de cero. |
 | **Prueba de reacción (derecha)** | El anillo se pone verde y hay que pulsar. Dura 30 s en la demo; la validada (PVT-B) dura 3 min. Al acabar sale el veredicto. |
 | **Veredicto** | GO o NO-GO con los motivos. Si el problema se corrige al momento (beber agua), botón **HECHO** y se recalcula. |
 | **QR** | Abre la prueba en el móvil de un juez; su resultado sale en la pantalla grande. |
